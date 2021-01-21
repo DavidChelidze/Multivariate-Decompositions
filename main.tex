@@ -1,0 +1,2705 @@
+% ----------------------------------------------------------------
+% Nonlinear Dynamics Lab Paper Template
+% ----------------------------------------------------------------
+\documentclass[10pt]{article}
+\usepackage[centertags]{amsmath} % AMS-LaTeX
+\usepackage{amssymb} % load extra math symbols and fonts
+\usepackage[psamsfonts,mathscr]{eucal} % Euler Script letters with \mathscr
+\usepackage{ifthen,calc,enumerate}
+\usepackage[all,frame,import]{xy}
+\usepackage[]{graphicx}
+\usepackage[comma,numbers,sort&compress]{natbib}
+\usepackage{tikz}
+\usetikzlibrary{arrows,patterns,intersections,calc,decorations.pathmorphing,decorations.markings,backgrounds,fit,positioning,shapes.symbols,chains}
+
+\tikzstyle{dim} = [latex-latex]
+
+\definecolor{col1}{rgb}{0,.447,.741}
+\definecolor{col2}{rgb}{.85,.325,.098}
+
+% ----------------------------------------------------------------
+\vfuzz2pt % Don't report over-full v-boxes if over-edge is small
+\hfuzz2pt % Don't report over-full h-boxes if over-edge is small
+
+% MARGINS --------------------------------------------------------
+\setlength{\topmargin}{-0.5in} \setlength{\oddsidemargin}{0.in}
+\setlength{\textwidth}{6.5in} \setlength{\textheight}{9in}
+\setlength{\parindent}{0in} \setlength{\parskip}{1ex}
+\renewcommand{\topfraction}{0.5}
+\renewcommand{\bottomfraction}{0.5}
+\renewcommand{\floatpagefraction}{0.5}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\baselinestretch}{1.1} % linespacing 1-single; 2-double
+\flushbottom % even bottom
+
+% MATH -----------------------------------------------------------
+\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\Real}{\mathbb R}
+\newcommand{\Imag}{\mathbb I}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\To}{\longrightarrow}
+
+% FIGS & EQS -----------------------------------------------------
+\newcommand{\eq}[1]{Eq.\ (\ref{#1})}
+\newcommand{\eqs}[2]{Eqs.\ (\ref{#1})--(\ref{#2})}
+\newcommand{\eqstwo}[2]{Eqs.\ (\ref{#1}) and~(\ref{#2})}
+\newcommand{\fig}[1]{Fig.~\ref{#1}}
+\newcommand{\figs}[2]{Figs.~\ref{#1}--\ref{#2}}
+\newcommand{\figtwo}[2]{Figs.~\ref{#1} and~\ref{#2}}
+\newcommand{\figthree}[3]{Figs.~\ref{#1}, \ref{#2} and~\ref{#3}}
+
+\graphicspath{{./figures/}} % this is the path to graphics files
+
+% ----------------------------------------------------------------
+\begin{document}
+
+\title{\bf Eigen and Singular Value Decompositions and Their Generalizations for Modal Identification and Multivariate Data Reduction}%
+\author{{\bf David Chelidze}\thanks{email: chelidze@uri.edu
+$\diamond$ phone: 401.874.2356 $\diamond$ fax: 401.874.2355}\\Department of Mechanical, Industrial and Systems
+Engineering\\
+University of Rhode Island}%
+
+\date{Draft Copy, \today}%
+
+% ----------------------------------------------------------------
+\maketitle
+
+% ----------------------------------------------------------------
+\begin{abstract}
+\noindent {\it Stuff.}
+\end{abstract}
+
+% ----------------------------------------------------------------
+% ----------------------------------------------------------------
+\section{Introduction}
+
+Most of the engineered systems are designed to operate within the linear systems' domain. 
+However, many natural systems and advanced engineered systems are now operating in the nonlinear systems' domain.
+For engineered systems, this expansion in the domain is caused by the need for more efficient and lighter structures to meet the demands of the modern economic landscape.
+When operating in the linear domain, dynamical systems spatiotemporal response is usually analyzed using separation of variables---i.e., separation of temporal and spatial domains---and the application of the superposition principle.
+Linear model and data reduction techniques mainly use Galerkin projection onto a set of spatial basis functions described by the {\em linear canonical transformations}, which are actions in a time-frequency plane (e.g., Fourier, Laplace, Bergman, Fresnel Transforms).
+When dealing with transient and intermittent cases, the time and frequency domains are hard to decouple. However, superposition is still applicable to a set functions or modes localized in both time and frequency, which which are determined, for example, using Wavelet Transforms or Chirplet Transforms.
+In addition to analytical decomposition methods, statistical/probabilistic characteristics of the linear systems can be used to generate empirical decompositions (e.g.,  Principal Component Analysis, Independent Component Analysis, Proper Orthogonal Decomposition).
+More recently, we have also considered empirical decompositions that can account for both statistical (spatial domain) and temporal (time-frequency domain) properties of the system such as Smooth Orthogonal Decomposition, Empirical Mode Decomposition, and Dynamic Mode Decomposition.
+
+Most of the decompositions described above are implicitly using the superposition principle to describe a system in terms of appropriate modes faithfully.
+In the case of nonlinear systems, when superposition is not applicable, linear decompositions cannot be expected to reflect or capture the separate and individual modal dynamics in a single linear mode.
+However, they can still be used to capture (or embed) the active nonlinear modes in a linear subspace of the original system's phases space, if these active modes are spatially bounded.
+In many practical applications this is reduced to looking for most energetic ``modes'' or a linear subspace that maximally captures the system's energy (e.g., Proper Orthogonal Decomposition or Principal Component Analysis); to identify statistically independent subspaces (e.g., Independent Component Analysis); capturing best linear approximation of the nonlinear mode (e.g., Dynamic Mode Decomposition); or identifying subspaces containing specific temporal of frequency characteristics (e.g., Empirical Mode Decomposition, Krylov Subspace Analysis, and Smooth Orthogonal Decomposition).
+
+% ----------------------------------------------------------------
+\subsection{Decomposing Fields Generated by Dynamical Systems}
+It is customary to model dynamical systems as flows that map their phase space onto itself $f:\mathbb{C}^n\rightarrow \mathbb{C}^n$.
+For distributed parameter systems phase space is infinite-dimensional.
+Modal decomposition of the real-valued flows can have complex-valued modes and the corresponding time coordinates if they while being oscillatory also exhibit exponential growth or decay.
+If all modes are real-valued, then they are also synchronous in time.
+In other words, the modal motion at each spatial point crosses zero at the same time.
+The complex-valued modes reflect any possible asynchrony in the modes (including traveling modes) and phase differences in the corresponding time coordinates.
+For the real-valued flows, the complex-valued mode comes in complex-conjugate pairs that span a real two-dimensional subspace of the phase space since the combination of complex conjugate modes and their time coordinates needs to remain real-valued.
+Thus, in theory, instead of having a pair of decoupled one-dimensional complex conjugate modes, we can work with a two-dimensional coupled real modes in the phase space (e.g., a combination of the real and complex components of the complex-valued modes).
+In essence, instead of working with the following complex modal representation
+\begin{equation}
+    \left[
+    \begin{matrix}{}
+  \dot q_{k} \\
+  \dot {\overline q}_{k}
+  \end{matrix}
+  \right]=\left[
+  \begin{matrix}{}
+  \lambda_k & 0 \\
+  0 & \overline \lambda_k 
+  \end{matrix}
+\right]
+  \left[
+  \begin{matrix}{}
+  q_{k} \\
+  \dot {\overline q}_{k} 
+  \end{matrix}
+\right]\,,
+\end{equation}
+we can use the following coordinate transformation
+\begin{equation}
+  \left[
+  \begin{matrix}{}
+  q_{k} \\
+  \dot {\overline q}_{k} 
+  \end{matrix}
+\right]=
+\left[
+  \begin{matrix}{}
+  1 & -i \\
+  1 & i 
+  \end{matrix}
+\right]
+  \left[
+  \begin{matrix}{}
+  q_{k,R} \\
+  q_{k,I} 
+  \end{matrix}
+\right]\,,
+\end{equation}
+where $q_{k,R}=\Re(q_k)$ and $q_{k,I}=\Im(q_k)$,
+to work with this two-dimensional real modes:
+\begin{equation}
+\begin{aligned}
+    \left[
+    \begin{matrix}{}
+  \dot q_{k,R} \\
+  \dot q_{k,I} 
+  \end{matrix}
+  \right]
+  &=\frac{1}{2}
+  \left[
+  \begin{matrix}{}
+  1 & 1 \\
+  i & -i 
+  \end{matrix}
+\right]
+\left[
+  \begin{matrix}{}
+  \lambda_k & 0 \\
+  0 & \overline \lambda_k 
+  \end{matrix}
+\right]
+\left[
+  \begin{matrix}{}
+  1 & -i \\
+  1 & i 
+  \end{matrix}
+\right]
+  \left[
+  \begin{matrix}{}
+  q_{k,R} \\
+  q_{k,I} 
+  \end{matrix}
+\right]\,,\\
+& = 
+\left[
+  \begin{matrix}{}
+  \Re (\lambda_k) & -\Im (\lambda_k) \\
+  \Im (\lambda_k) & \Re (\lambda_k) 
+  \end{matrix}
+\right]
+  \left[
+  \begin{matrix}{}
+  q_{k,R} \\
+  q_{k,I} 
+  \end{matrix}
+\right]\,,\\
+& = 
+\left[
+  \begin{matrix}{}
+  1 & -1 \\
+  1 & 1 
+  \end{matrix}
+\right]
+\left[
+  \begin{matrix}
+  \Re (\lambda_k) & 0 \\
+  0 & \Im (\lambda_k) 
+  \end{matrix}
+\right]
+  \left[
+  \begin{matrix}{}
+  q_{k,R} \\
+  q_{k,I} 
+  \end{matrix}
+\right]\,.
+\end{aligned}
+\end{equation}
+Therefore, we can look for a real-valued decomposition of the real-valued flow if we allow modes to be represented by a two-dimensional real subspaces.
+
+
+% ----------------------------------------------------------------
+\subsection{Scalar Field Decompositions Based on Separation of Variables}\label{intro}
+
+For many distributed parameter systems (continua), one may be interested in identifying dynamics or phenomena that are of particular interest.
+For example, one may be interested in the development of the high-fidelity reduced-order model that is valid for a wide range of loading/operating conditions, or we could be interested in identifying mode shapes that are responsible for specific dynamical characteristics of a system.
+
+We usually obtain the needed decompositions by solving the (generalized) eigenvalue problem of some covariance matrices(s) or Fredholm integral equation of the second kind of some covariance function(s).
+A fundamental distinguishing factor of various linear decompositions is the symmetry of the associated covariance functions or matrices.
+For the symmetric (i.e., Hermitian) autocovariance the weights (or characteristic values) in the decomposition are real and nonnegative, while for the asymmetric (i.e., non-Hermitian) cross-covariance they are generally complex-valued.
+Hermitian or real characteristic value problem has the corresponding (generalized) Rayleigh's quotient, while the non-Hermitian or complex-valued problem does not.
+Therefore, Hermitian problems can be formulated as optimization problems, while non-Hermitian problems cannot.
+Some examples where we get the real characteristic values are extraction of smooth deterministic trends from the multivariate data, the principal component analysis, or undamped vibration modal analysis.
+In contrast, the complex characteristic values appear when identifying exponentially decaying or growing modes (e.g., damped vibration modes) or decomposing fields where we expect phase variation across the spatial domain.
+The real characteristic values are associated with {\em proper orthogonal decomposition}, {\em independent component analysis}, {\em smooth orthogonal decomposition}, and {\em high-order generalized singular value decomposition}.
+In contrast, {\em eigensystem realization algorithm}, {\em state-variable decomposition}, and {\em dynamic mode decomposition} usually have complex characteristic values.
+We usually reduce Hermitian problems to finding stationary values to an appropriate generalized Raleigh's quotient, or a generalized eigenvalue problem of a pair of Hermitian autocovariance functions or matrices, or simultaneous diagonalization of a set of Hermitian autocovariance matrices.
+Complex characteristic values, in contrast, are usually tied to the generalized eigenvalue decompositions that include (at least one) non-Hermitian asymmetric cross-covariance function or matrix.
+
+% ----------------------------------------------------------------
+\subsubsection{Continuous Field Function}
+While most systems of practical interest are nonlinear, as a first-order approximation, we may look at a linear decomposition of a scalar field $f(x,t)\in \mathbb{C}$, ${x} \in  {\cal X} \subset \mathbb{R}^n$ and $t \in T\subset\mathbb{R}$\footnote{while most decompositions will work with complex-valued fields, we do not consider them here.}.
+Generally, we are interested in the nature of oscillations/variations in the field about its temporal mean.
+For example, if we are interested in temporal variations and want all the spatial boundary conditions to be satisfied by the resultant modes, we look at the variations in the field about its temporal mean 
+\begin{equation}
+    \bar f (x) \triangleq \frac{1}{\norm{T}} 
+    \int_T f(x,t)\, \mathrm{d}t \,,
+\end{equation}
+Alternatively, we might like to know the spatial variations about field's spatial mean
+\begin{equation}
+    \bar f(t) \triangleq \frac{1}{\norm{{\cal X}}}\int_{\cal X} f(x,t)\, \mathrm{d} x\,,
+\end{equation}
+when the spatial boundary conditions are not restrictive or important. 
+In either case, we decompose
+\begin{equation}
+    \tilde f(x,t) = f(x,t) - \bar f\,.
+\end{equation}
+% Please not that this also implies that spatial variations are also with respect to the corresponding spatial mean.
+Now, we drop the tilde from the field and consider decomposing it into unitary linearly independent spatial basis functions $v_i({x})$ (mode shapes), the corresponding unitary linearly independent temporal basis functions $u_i(t)$ (temporal coordinates), and the corresponding modal weights $\sigma_{i}$:
+\begin{equation}\label{contfield}
+f({x},t) = \sum_{k=1}^{\infty} \sigma_k u_k(t)
+v_k({x})\,, \quad \mathrm{such\; that} \quad %\frac{1}{\norm{{\cal X}}\norm{T}}
+\int_T\int_{\cal X} u_k(t)v_k(x)\, \mathrm{d} x\mathrm{d} t = 1\,.
+\end{equation}
+The solution to this decomposition problem is not unique, as linear combinations of specific solutions are also solutions. 
+One usually looks for a specific decomposition, dependent on the problem at hand or dependent on the physical phenomena one likes to study or identify.
+
+For a set of scalar field functions $\{f_i(x,t)\}_{i=1}^N$, decompositions are usually the solution to some form of the (generalized) Fredholm integral equations of the second kind involving spatial and temporal cross-covariance functions
+\begin{equation}
+    K_{ij}(x,y)  \triangleq 
+    %\frac{1}{\norm{T}}
+    \int_T \overline{f_i(y,t)} f_j(x,t)\, \mathrm{d}t \quad \mathrm{or}\quad 
+    P_{ij}(t,s) \triangleq \int_{\cal X} \overline{f_i(x,s)} f_j(x,t)\, \mathrm{d}x\,,
+\end{equation}
+where $\overline{(\cdot)}$ indicates complex conjugate of ${(\cdot)}$.
+
+
+% ----------------------------------------------------------------
+\subsubsection{Discrete Field Matrix}
+In practice, we consider decomposition of a discrete, sampled field matrix $X\in \mathbb{C}^{m\times n}$, where $X_{ij}= f(x_j,t_i)$ for ($i = 1,\ldots,m$ and $j = 1,\ldots,n$) is the measurement of the field variable at spatial point $x_j$ and temporal time $t_i$. 
+We are usually interested in variations about the mean-field and, therefore, we assume that the columns of the matrix $X$ are zero mean or we subtract the mean from each column. 
+Thus, we are seeking\begin{equation}
+    X = U\Sigma V^\mathrm{H} = \sum_{k=1}^n \sigma_k u_k v_k^\mathrm{H}\,, \quad \mathrm{such\; that}\quad \norm{u_k v_k^\mathrm{H}} = 1\,,
+\end{equation}
+where superscript $(\cdot)^\mathrm{H}$ indicates a Hermitian or conjugate transpose of $(\cdot)$.
+In addition,  for $m\ge n$ and if $X$ has full column rank, $U = [u_1 \cdots u_n] \in \mathbb{C}^{m\times n}$ is composed of unit vectors ($\norm{u_i}=1$), $V = [v_1 \cdots v_n] \in \mathbb{C}^{n\times n}$ is composed of unit vectors ($\norm{v_i}=1$), and $\Sigma = \mathrm{diag}(\sigma_{i})\in\mathbb{C}^{n\times n}$. 
+Alternatively, for $m\le n$ and if $X$ has full row rank, $U = [u_1 \cdots u_m] \in \mathbb{C}^{m\times m}$ and $V = [v_1 \cdots v_n] \in \mathbb{C}^{n\times m}$ are composed of unit vectors, and $\Sigma = \mathrm{diag}(\sigma_{i})\in\mathbb{C}^{m\times m}$.
+If matrix $X$ is rank deficient or $\mathrm{rank}(X) < \min(m, n)$, we can still find its decomposition in $r$-dimensional subspace, where
+\begin{equation}
+    r = \min\left(m,n,\mathrm{rank}(X)\right)\,,
+\end{equation}
+where $U \in \mathbb{C}^{m\times r}$, $V \in \mathbb{C}^{n\times r}$, and $\Sigma \in\mathbb{C}^{r\times r}$.
+
+For a discrete set of scalar field matrices $\{X_i\}_{i=1}^N$, decompositions are usually the solution to some form of the (generalized) eigenvalue problem involving cross-covariance matrices
+\begin{equation}
+    K_{ij} \triangleq X_i^\mathrm{H} X_j \quad \mathrm{or}\quad 
+    P_{ij} \triangleq X_i X_j^\mathrm{H}\,,
+\end{equation}
+where $(\cdot)^\mathrm{H}$ indicates Hermitian or conjugate transpose of $(\cdot)$, $X_i\in\mathbb{C}^{m_i\times n}$ for $K_{ij}$, and $X_i\in \mathbb{C}^{m\times n_i}$ for $P_{ij}$.
+If we only consider Hermitian autocovariance matrices (i.e., $i=j$), then decompositions are based on diagonalizing either a singular autocovariance matrix (e.g., singular value decomposition), a simultaneous decomposition of two autocovariance matrices (e.g., generalized singular value decomposition), or simultaneous diagonalization of a set of autocovariance matrices (e.g., higher-order generalized singular value decomposition).
+
+% ----------------------------------------------------------------
+% ----------------------------------------------------------------
+\section{Continuous Hermitian Decompositions}
+
+We start by considering the basic problem of decomposing the continuous scalar field
+$f(x,t)$ into temporal $u_i(t)$ and spatial $v_i(x)$ basis functions as shown in \eq{contfield}.
+For this scalar field, we can define a Hermitian {\em spatial} autocovariance function
+\begin{equation}\label{Kxx}
+    K(x,y) = 
+    %\frac{1}{\norm{T}}
+    \int_T \overline{f(y,t)} f(x,t)\, \mathrm{d}t = \sum_{i=1}^{\infty}\sum_{j=1}^{\infty} \sigma_{i} \overline{\sigma_{j}} v_i(x)\overline{v_j(x)} 
+    %\frac{1}{\norm{T}}
+    \int_T u_i(t) \overline{u_j(t)}\, \mathrm{d} t
+\end{equation}
+and a Hermitian {\em temporal} autocovariance function
+\begin{equation}
+    P(t,s) = %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} \overline{f(x,s)}f(x,t) \, \mathrm{d} x = \sum_{i=1}^{\infty}\sum_{j=1}^{\infty} \sigma_{i} \overline{\sigma_{j}} u_i(t) \overline{u_j(t)}
+    %\frac{1}{\norm{{\cal X}}}
+    \int_{\cal X} v_i(x)\overline{v_j(x)} \, \mathrm{d} x\,,
+\end{equation}
+where $\overline{(\cdot)}$ indicates complex conjugate of ${(\cdot)}$.
+% ----------------------------------------------------------------
+\subsection{Continuous Proper Orthogonal Decomposition}
+
+Continuous proper orthogonal decomposition (POD) decomposes the continuous field
+$f(x,t)$ into {\em orthonormal} temporal $u_i(t)$ and {\em orthonormal} spatial $v_i(x)$ basis functions
+\begin{equation}
+    %\frac{1}{\norm{T}}
+    \int_T \overline{ u_i(t) } u_j(t) \, \mathrm{d} t = \delta_{ij} \quad \mathrm{and} \quad 
+    %\frac{1}{\norm{{\cal X}}}
+    \int_{\cal X} \overline{ v_i(x) } v_j(x) \, \mathrm{d} x = \delta_{ij}\,. 
+\end{equation}
+POD considers the inner product of the field with a member of each set of basis (i.e., projections of the field onto each of the basis functions)
+\begin{equation}
+    %\frac{1}{\norm{{\cal X}}}
+    \int_{\cal X} \overline{f(x,t)} v_j(x) \, \mathrm{d} x= \sum_{i=1}^\infty \sigma_{i} \overline{u_i(t)} 
+    %\frac{1}{\norm{{\cal X}}}
+    \int_{\cal X} \overline{v_i(x)} v_j(x) \, \mathrm{d} x = \sum_{i=1}^\infty \sigma_{i} \overline{u_i(t)} \,\delta_{ij} = \sigma_{j} \overline{u_j(t)}
+\end{equation}
+and
+\begin{equation}
+    % \frac{1}{\norm{T}}
+    \int_T \overline{f(x,t)} u_j(t) \, \mathrm{d} t = \sum_{i=1}^\infty \sigma_{i} \overline{v_i(x)} 
+    % \frac{1}{\norm{T}}
+    \int_T \overline{u_i(t)} u_j(t) \, \mathrm{d} t = \sum_{i=1}^\infty \sigma_{i} \overline{v_i(x)} \, \delta_{ij} = \sigma_{j} \overline{v_j(x)}\,.
+\end{equation}
+Therefore, each triple $\sigma_{i}u_i(t)v_i(x)$ represents an uniques spatiotemporal modes that are orthogonal to each other.
+Now, we look at the transformation of each of the basis vectors through the application of the Hermitian autocovariance function
+\begin{equation}
+\begin{aligned}
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X}  K(x,y) {v_j(y)}\, \mathrm{d} y & = 
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} 
+    \left(
+    %\frac{1}{\norm{T}} 
+    \int_T \overline{f(y,t)} f(x,t)\, \mathrm{d}t 
+    \right) 
+    {v_j(y)}\, \mathrm{d} x\\
+    & = 
+    %\frac{1}{\norm{T}} 
+    \int_T f(x,t)
+    \left( 
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} \overline{f(y,t)} v_j(y) \, \mathrm{d} y
+    \right) 
+    \mathrm{d} t\\
+    & = \sigma_{j} \left(
+    %\frac{1}{\norm{T}} 
+    \int_T {f(x,t)}
+     \overline{u_j(t)}\, \mathrm{d} t\right)\\
+    & =\sigma_{j}^2 v_j(x)\,,
+\end{aligned}
+\end{equation}
+and
+\begin{equation}
+\begin{aligned}
+    %\frac{1}{\norm{T}} 
+    \int_T  P(t,s) {u_j(s)}\, \mathrm{d} s 
+    & = 
+    %\frac{1}{\norm{T}} 
+    \int_T 
+    \left(
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} \overline{f(x,s)} f(x,t)\, \mathrm{d}x 
+    \right) 
+    {u_j(s)}\, \mathrm{d} s\\
+    & = 
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} {f(x,t)}
+    \left( 
+    %\frac{1}{\norm{T}} 
+    \int_T \overline{f(x,s)} u_j(s) \, \mathrm{d} s
+    \right) 
+    \mathrm{d} x\\
+    & = \sigma_{j} \left(
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} {f(x,t)}
+     \overline{v_j(x)}\, \mathrm{d} x\right)\\
+    & =\sigma_{j}^2 u_j(t)\,.
+\end{aligned}
+\end{equation}
+These result into the integral eigenvalue problems for each of the common basis functions or Fredholm integral equations of the second kind
+\begin{equation}
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} 
+    K(x,y) {v_j(y)}\, \mathrm{d} y = \sigma_{j}^2 v_j(x)
+\quad \mathrm{and} \quad 
+    %\frac{1}{\norm{T}}
+    \int_T 
+    P(t,s) {u_j(s)}\, \mathrm{d} s = \sigma_{j}^2 u_j(t)\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsubsection{Continuous POD and Rayleigh's Quotient}
+From the optimization perspective, the objective of POD is to find a decomposition that is optimal in the least squares sense at each truncated dimension $k$:
+\begin{equation}\label{ROfield}
+f_k({x},t) = \sum_{i=1}^{k} \sigma_{i} u_i(t)
+v_i({x})\,.
+\end{equation}
+The POD is usually interpreted as an energy optimal decomposition, where we want to find $k$-dimensional orthonormal basis that minimizes $l_2$ norm in both temporal and spatial domains 
+\begin{equation}
+\epsilon_k^2 = \int_{\cal X} \int_T \norm{f(x,t)-f_k(x,t)}^2 \mathrm{d}t \, \mathrm{d}x
+\end{equation} 
+for each value of $k$.
+%, while also requiring that the corresponding basis functions are orthonormal
+%\begin{equation}
+%\frac{1}{\norm{{\cal X}}}\int_{\cal X} \overline{ v_i(x) }v_j(x)\,  \mathrm{d} x = \delta_{ij} \quad \mathrm{and} \quad \frac{1}{\norm{T}} \int_T \overline{ u_i(t)} u_j(t)\,  \mathrm{d} t = \delta_{ij}.
+%\end{equation}
+
+This is equivalent to maximizing the {\em variance} of the projection of the scalar field onto either temporal or spatial $k$-dimensional subspaces, respectively,
+\begin{equation}
+\begin{aligned}
+\mathrm{Var} \left[
+\sum_{j=1}^k 
+%\frac{1}{\norm{T}} 
+\int_T  f({x},t) \overline{u_j(t)}\,\mathrm{d}t\right] &= \mathrm{Var}\left[\sum_{j=1}^k \sum_{i=1}^{k} \sigma_{i} v_i(x) 
+%\frac{1}{\norm{T}}
+\int_T u_i(t)\overline{u_j(t)}\,\mathrm{d}t
+\right] \\
+&= \sum_{j=1}^{k} \sigma_{j}^2 \mathrm{Var}\left[v_j(x)
+\right] = \sum_{j=1}^{k} \sigma_{j}^2 
+%\frac{1}{\norm{{\cal X}}}
+\int_{\cal X} \overline{ v_j(x) }v_j(x)
+\,\mathrm{d} x = \sum_{j=1}^{k} \sigma_{j}^2 
+\end{aligned}
+\end{equation}
+or
+\begin{equation}
+\begin{aligned}
+\mathrm{Var}\left[
+\sum_{j=1}^k 
+%\frac{1}{\norm{{\cal X}}}
+\int_{\cal X} f({x},t) \overline{v_j(x)}\,\mathrm{d}x \right] &= \mathrm{Var} \left[\sum_{j=1}^k \sum_{i=1}^{k} \sigma_{i} 
+u_i(t)  
+%\frac{1}{\norm{{\cal X}}}
+\int_{\cal X} v_i(x)\overline{v_j(x)} \,\mathrm{d}x
+\right] \\
+&= \sum_{j=1}^{k} \sigma_{j}^2 \mathrm{Var}
+\left[ u_j(t) \right] = \sum_{j=1}^{k} \sigma_{j}^2 
+%\frac{1}{\norm{T}}
+\int_T \overline{ u_j(t) }u_j(t)
+\,\mathrm{d} t= \sum_{j=1}^{k} \sigma_{j}^2 \,.
+\end{aligned}
+\end{equation}
+
+Therefore, this is equivalent to seeking stationary points (or the extrema) of either of the following Rayleigh's quotients in terms of $v(x)$ or $u(t)$, respectively,
+\begin{equation}
+\begin{aligned}
+    {\cal R}\left(v(x)\right) 
+    &\triangleq
+    \frac{
+    \mathrm{Var}\left[ 
+    %\frac{1}{\norm{{\cal X}}}
+    \int_{\cal X}  f(x,t) \overline{v(x)}\, \mathrm{d}x \right] 
+    }{ 
+    \mathrm{Var}\left[ v(x) \right]         }
+     = 
+    \frac{
+    %\frac{1}{\norm{{\cal X}}^2}
+    \int_{\cal X} \int_{\cal X} \left[
+    %\frac{1}{\norm{T}}
+    \int_T \overline{f(y,t)}f(x,t)\, \mathrm{d}t\right] v(y)\overline{v(x)}\, \mathrm{d}y  \mathrm{d}x  
+    }{
+    %\frac{1}{\norm{{\cal X}}}
+    \int_{\cal X} v(x) \overline{v(x)} \, \mathrm{d}x
+        }\\
+        & = 
+    \frac{
+    \int_{\cal X} \int_{\cal X} K(x,y) v(y) \, \mathrm{d}y\, \overline{v(x)}\,  \mathrm{d}x  
+    }{ 
+    %\norm{{\cal X}} 
+    \int_{\cal X} v(x) \overline{v(x)} \, \mathrm{d}x
+        }
+\end{aligned}
+\end{equation}
+or
+\begin{equation}
+\begin{aligned}
+    {\cal R} \left(
+    u(t)
+    \right) 
+    &\triangleq
+    \frac{
+    \mathrm{Var}\left[ %\frac{1}{\norm{T}}
+    \int_T  f(x,t) \overline{u(t)}\, \mathrm{d}t \right] 
+    }{ 
+    \mathrm{Var} \left[ u(t) \right]
+        }
+     = 
+    \frac{
+    %\frac{1}{\norm{T}^2}
+    \int_T \int_T \left[
+    %\frac{1}{\norm{{\cal X}}}
+    \int_{\cal X} \overline{f(x,s)} f(x,t)\, \mathrm{d}x
+    \right] 
+    u(s)\overline{u(t)}\, \mathrm{d} s\,  \mathrm{d} t  
+    }{ %\frac{1}{\norm{T}}
+    \int_T u(t)\overline{u(t)}\, \mathrm{d}t        }\\
+        & = 
+    \frac{
+    \int_T \int_T P(t, s) u(s)\overline{u(t)}\, \mathrm{d}s  \mathrm{d}t
+    }{ % \norm{T}
+    \int_T u(t)\overline{u(t)}\, \mathrm{d}t
+        }\,.
+\end{aligned}
+\end{equation}
+%where the integrals inside the square brakets are the temporal and spatial autocovariance functions, respectively,
+%\begin{equation}
+%    K_{\cal X}(x,y) = \frac{1}{\norm{T}}\int_T  \overline{f(x,t)}  f(y,t)\, \mathrm{d}t \quad \mathrm{or} \quad K_T(t,s) = \frac{1}{\norm{{\cal X}}}\int_{\cal X}  \overline{f(x,t)}  f(x,s)\, \mathrm{d}x\,.
+%\end{equation}
+Then, $\sigma_{i}$ are obtained by finding the stationary points of  ${\cal R}$:
+\begin{equation}\label{Rmax}
+    \sigma^2 = \underset{v(x)}{\max} \,{\cal R}\left(v(x)\right)=\underset{u(t)}{\max}\, {\cal R}\left(u(t)\right)\,.
+\end{equation}
+
+The most energetic $k$-th order approximation would only use the largest solutions, $\{\sigma_{i}\}_{i=1}^k$, obtained during maximization of the \eq{Rmax}.
+To solve these maximization problems, we require variations in the Rayleigh's quotients to vanish
+\begin{equation}
+    \delta  {\cal R}\left(v(x)\right) = 0 \quad \mathrm{or} \quad \delta  {\cal R}\left(u(t)\right)=0\,.
+\end{equation}
+The solution to the above are the same integral eigenvalue problems (or Fredholm integral equations of the second kind)
+\begin{equation}\label{Fred}
+    % \frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} K(x,y)  v_i(y)  \, dy \, =\sigma_{i}^2  v_i(x)  \quad \mathrm{or} \quad 
+    % \frac{1}{\norm{T}}
+    \int_T P(t,s)  u_i(s)  \, ds \, =\sigma_{i}^2  u_i(t)\,.
+\end{equation}
+%\begin{equation}\label{podTint}
+%    \int_{\cal X} \left(\int_T  f(x,t)  f(y,t)\, \mathrm{d}t\right)  v_i(y)  \, dy \, =\sigma_{i}^2  v_i(x)
+%\end{equation}
+%or
+%\begin{equation}\label{podXint}
+%    \int_T \left(\int_{\cal X}  f(x,t) f(x,s)\, \mathrm{d}x\right)  u_i(s)  \, ds \, =\sigma_{i}^2  u_i(t)\,,
+%\end{equation}
+
+% ----------------------------------------------------------------
+\subsubsection{Continuous POD and Normal Modes}
+
+The normal modes in the dynamical (oscillatory or vibrating) system are not generally orthogonal to each other.
+Instead, they are orthogonal with respect to a particular Hermitian differential operator (say  $\rho(x)$) in a dynamical systems' state space defined by a specific distribution of mass or determined by system's configuration and the boundary conditions.
+Sturm-Liouville theory was developed to deal with these problems, and when certain conditions are satisfied, the corresponding normalized eigenfunctions form an orthonormal basis with respect to the linear operator $\rho(x)$
+\begin{equation}
+    \int_{\cal X} \rho(x) \overline{v_i(x)} v_j(x)\, \mathrm{d} x = \delta_{ij}\,,
+\end{equation}
+in the corresponding Hilbert space $L_2\left({\cal X}, \rho(x)\, \mathrm{d}x\right)$.
+Therefore, the corresponding integral eigenvalue problems become
+\begin{equation}\label{Hred}
+    \int_{\cal X} \mathcal{M}(y) K(x,y)  v_i(y)  \, dy \, =\sigma_{i}^2  v_i(x)  \quad \mathrm{or} \quad 
+\int_T P(t,s)  u_i(s)  \, ds \, =\sigma_{i}^2  u_i(t)\,,
+\end{equation}
+where $K(x,y)$ is the same as in \eq{Kxx}, $\mathcal{M}$ differential operator can be, for example, a Laplacian operator corresponding to the axial stress field for torsional vibrations of a rod, and
+\begin{equation}
+    P(t,s) =     \int_{\cal X}  \rho(x)\overline{f(x,s)}f(x,t) \, \mathrm{d} x \,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsection{Higher-Order Continuous Hermitian Decompositions}
+
+It is often the case when we are looking for the common, either spatial $\{v_k(x)\}$ or temporal $\{u_k(t)\}$, basis functions for a set of $N$ different field functions $\left\{f_i(x,t)\right\}_{i=1}^N$, i.e.,
+\begin{equation}
+    f_i(x,t) = \sum_{k=1}^\infty \sigma_{i,k} u_{k}(t) v_{i,k}(x) \quad \mathrm{or} \quad     f_i(x,t) = \sum_{k=1}^\infty \sigma_{i,k} u_{i,k}(t) v_{k}(x)\,.
+\end{equation}
+In these cases, we can no longer require that the common basis functions ($\{u_k(t)\}$ or $\{v_k(x)\}$) be orthogonal. % as the cross-covariance between the different fields cannot be expected to be symmetric (i.e., Hermitian).
+However, we can still require the individual basis ($\{u_{i,k}(t)\}$ or $\{v_{i,k}(x)\}$) to be orthonormal.
+For either of the common bases, we can define the corresponding set of Hermitian  autocovariance functions
+\begin{equation}\label{Cxy}
+    K_{ii}(x,y)\triangleq  %\frac{1}{\norm{T}}
+ \int_T \overline{f_i(y,t)} f_i(x,t)\, \mathrm{d} t
+     \quad \mathrm{or}\quad 
+     P_{ii}(t,s) 
+     \triangleq %\frac{1}{\norm{{\cal X}}} 
+     \int_{\cal X} \overline{f_i(x,s)}f_i(x,t)\, \mathrm{d} x\,.
+\end{equation}
+
+%% ----------------------------------------------------------------
+%\subsection{Generalized Continuous Hermitian Decompositions}
+
+These Hermitian autocovariance functions for each of the field function can be written as 
+\begin{equation}
+\begin{aligned}
+    K_{ii}(x,y) 
+    & =  
+    %\frac{1}{\norm{T}} 
+    \int_T 
+    \sum_{k=1}^\infty \overline{\sigma_{i,k} u_{i,k}(t)v_{k}(y)} 
+    \sum_{r=1}^\infty \sigma_{i,r} u_{i,r}(t) v_{r}(x)\, \mathrm{d} t\\
+    & =  
+    \sum_{k=1}^\infty \sum_{r=1}^\infty 
+     {\sigma_{i,k}}\sigma_{i,r}\overline{v_{k}(y)} v_{r}(x)
+    %\frac{1}{\norm{T}} 
+    \int_T 
+    \overline{ u_{i,k}(t)} 
+    u_{i,r}(t)\, \mathrm{d} t\\
+    & =  
+    \sum_{k=1}^\infty
+     \sigma_{i,k}^2\overline{v_{k}(y)} v_{k}(x)\\
+\end{aligned}
+\end{equation}
+and, similarly,
+\begin{equation}
+    P_{ii}(t,s) =  
+    \sum_{k=1}^\infty
+    \sigma_{i,k}^2\overline{u_{k}(s)} u_{k}(t)\,.
+\end{equation}
+At this point, let us introduce the adjoint bases functions $w_i(x)$ and $z_i(t)$ defined as
+\begin{equation}
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} \overline{v_{i}(x)} w_j(x) \mathrm{d} x = \delta_{ij} \quad \mathrm{and} \quad 
+    %\frac{1}{\norm{T}} 
+    \int_T \overline{u_{i}(t)} z_j(t) \mathrm{d} t = \delta_{ij}\,.
+\end{equation}
+Then, taking the following inner products we get
+\begin{equation}\label{sp1}
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} K_{ii}(x,y) w_r(x) \mathrm{d} x = \sum_{k=1}^\infty
+    \sigma_{i,k}^2  v_{k}(y) 
+    %\frac{1}{\norm{{\cal X}}} 
+    \int_{\cal X} \overline{v_{k}(x)} w_r(x) \mathrm{d} x = \sigma_{i,k}^2 v_{r}(y)  
+\end{equation}
+and
+\begin{equation}\label{sp2}
+    %\frac{1}{\norm{T}} 
+    \int_T P_{ii}(t,s) z_r(t) \mathrm{d} t = \sum_{k=1}^\infty
+    \sigma_{i,k}^2  u_{k}(s) 
+    %\frac{1}{\norm{T}} 
+    \int_T \overline{u_{k}(t)} z_r(t) \mathrm{d} t = \sigma_{i,k}^2 u_{r}(s)  \,.
+\end{equation}
+Thus, we can define the following generalized Rayleigh's quotients
+\begin{equation}
+    \mathcal{R}_{ij}\left(w(x)\right)=\lambda_{ij}^2\triangleq\frac{\sigma_{i}^2}{\sigma_{j}^2} = 
+ \frac{\int_{\cal X} K_{ii}(x,y) w(x) \mathrm{d} x}{ \int_{\cal X} K_{jj}(x,y) w(x) \mathrm{d} x} 
+ \end{equation}
+or
+\begin{equation}
+        \mathcal{R}_{ij}\left(z(t)\right)=\lambda_{ij}^2\triangleq\frac{\sigma_{i}^2}{\sigma_{j}^2} =\frac{\int_T P_{ii}(t,s) z(t) \mathrm{d} t}{ \int_T P_{jj}(t,s) z(t) \mathrm{d} t}\,,
+\end{equation}
+which can be written as the corresponding generalized integral eigenvalue problems
+\begin{equation}
+    \int_{\cal X} K_{ii}(x,y) w(x) \mathrm{d} x = \lambda_{ij}^2  \int_{\cal X} K_{jj}(x,y) w(x) \mathrm{d} x
+ \end{equation}
+or
+\begin{equation}
+        \int_T P_{ii}(t,s) z(t) \mathrm{d} t=\lambda_{ij}^2 \int_T P_{jj}(t,s) z(t) \mathrm{d} t\,.
+\end{equation}
+Once the adjoint eigenfunctions are known we can find the needed basis functions using \eqstwo{sp1}{sp2}.
+
+If there are more than two field functions ($N>2$) we can also write
+%\begin{equation}
+%    \int_{\cal X} \sum_{i\in \mathbb{Z}_1} K_{ii}(x,y) w(x) \mathrm{d} x = \check\lambda  \int_{\cal X} \sum_{j\in \mathbb{Z}_2} K_{jj}(x,y) w(x) \mathrm{d} x
+% \end{equation}
+%or
+%\begin{equation}
+%        \int_T \sum_{i\in \mathbb{Z}_1} P_{ii}(t,s) z(t) \mathrm{d} t=\check\lambda \int_T \sum_{j\in \mathbb{Z}_2} P_{jj}(t,s) z(t) \mathrm{d} t\,,
+%\end{equation}
+\begin{equation}
+    \int_{\cal X} \sum_{i\ne j} K_{ii}(x,y) w(x) \mathrm{d} x = \check\lambda  \int_{\cal X} K_{jj}(x,y) w(x) \mathrm{d} x
+ \end{equation}
+or
+\begin{equation}
+        \int_T \sum_{i\ne j} P_{ii}(t,s) z(t) \mathrm{d} t=\check\lambda \int_T P_{jj}(t,s) z(t) \mathrm{d} t\,,
+\end{equation}
+where
+\begin{equation}
+    \check\lambda =  \sum_{i\ne j} \lambda_{ij}^2\,.
+\end{equation}
+
+\subsubsection{Example 1: Smooth Coordinate Decomposition}
+
+We seek to find a decomposition that minimizes the following generalized Rayleigh's quotient:
+\begin{equation}\label{R2}
+    {\cal R}\left(w(x)\right) \triangleq
+    \frac{
+    \int_T \norm{ 
+    \int_{\cal X} {\cal D}^{r}  f(x,t) w(x)\,\mathrm{d} x
+    }^2 \,\mathrm{d} t
+    }{
+    \int_T \norm{
+    \int_{\cal X}  f(x,t) w(x)\, \mathrm{d} x
+    }^2 \,\mathrm{d} t 
+    }\,,
+\end{equation}
+%\begin{equation}
+%    \lambda_{i}^{2r} \triangeq
+%    {\arg\! \min}_{w_i(x)} 
+%    \frac{
+%    \int_T \left( 
+%    \int_{\cal X} {\cal D}^{r} f(x,t) w_i(x)\,\mathrm{d} x
+%    \right)^2 \,\mathrm{d} t
+%    }{
+%    \int_T \left(
+%    \int_{\cal X} f(x,t) w_i(x)\, \mathrm{d} x
+%    \right)^2 \,\mathrm{d} t 
+%    }
+%    = {\arg\! \min}_{v_i(x)} \int_T \left( {\cal D}^{r} u_i(t)\right)^2 \,\mathrm{d} t\,,
+%\end{equation}
+where ${\cal D}^{r}$ represents $r$-th order time derivative operator and
+\begin{equation}
+    \lambda^{2r} = \underset{w(x)}{\min}\, {\cal R}\left(w(x)\right)
+%    {\arg\! \min}_{w_i(x)} 
+\end{equation}
+are the stationary points of ${\cal R}\left(w(x)\right)$. Lets denote the projection of $ f(x,t)$ onto the  $w(x)$, or the corresponding time coordinate function, as
+\begin{equation}\label{timecoord}
+    p(t) \triangleq %\frac{1}{\norm{{\cal X}}}
+    \int_{\cal X}  f(x,t)\overline {w(x)} \,\mathrm{d}x\,.
+\end{equation}
+Now, plugging \eq{timecoord} into the \eq{R2}, we get
+\begin{equation}
+    {\cal R}\left(w(x)\right) = {\cal R}\left(p(t)\right) =
+    \frac{
+    \int_T \norm{ 
+    {\cal D}^{r} p(t)
+    }^2 \,\mathrm{d} t
+    }{
+    \int_T 
+    \norm{p(t)}
+    ^2 \,\mathrm{d} t 
+    }.    
+\end{equation}
+Therefore, finding the stationary point of \eq{R2} would correspond to seeking smoothest possible\footnote{Or minimally rough, where roughness is defined as the variance in the $r$-th order dime derivative of $p(t)$.} time coordinates $p(t)$, and is usually referred to as {\em smooth orthogonal decomposition}, but from hereon we would refer to it as {\em smooth coordinate decomposition} (SCD). Applying the variational technique to \eq{R2}, we get the following generalized integral eigenvalue problem:
+\begin{equation}
+    \int_{\cal X} \left(\int_T \overline{{\cal D}^{r}  f(x,t)} {\cal D}^{r}  f(y,t)\, \mathrm{d}t\right)  w_i(y)  \, dy \, =\lambda_{i}^{2r}  \int_{\cal X} \left(\int_T  \overline{f(x,t)}  f(y,t)\, \mathrm{d}t\right)  w_i(y)  \, dy\,.
+\end{equation}
+The resulting eigenfunctions ({\em smooth projective modes}) $w_i(x)$ are not typically orthogonal to each other. However, requiring the corresponding adjoint eigenfunctions ({\em smooth modes}) $v_i(x)$ to be not only unitary but also biorthonormal with respect to the projective modes $w_i(x)$
+\begin{equation}
+%\frac{1}{\norm{{\cal X}}}
+\int_{\cal X} v_i(x) \overline{ w_j(x)}\,  \mathrm{d} x = \delta_{ij},
+\end{equation}
+we get
+\begin{equation}
+     f(x,t) =\sum_{i=1}^\infty q_i(t) v_i(x) = \sum_{i=1}^\infty \sigma_{i} u_i(t) v_i(x)
+\end{equation}
+where $u_i(t)$ are not only unitary, but orthonormal
+\begin{equation}
+%\frac{1}{\norm{T}}
+\int_T \overline {u_i(t)} u_j(t)\,  \mathrm{d} t = \delta_{ij} \quad \mathrm{and} \quad 
+%\frac{1}{\norm{T}}
+\int_T D^r \overline u_i(t) D^r u_j(t)\,  \mathrm{d} t = \lambda^{2r}_i \delta_{ij}\,.
+\end{equation}
+
+\subsubsection{Example 2: Smooth Mode Decomposition}
+
+Another alternative to SCD is to seek smoothest spatial functions/surfaces $v_i(x)$, 
+which would be equivalent to seeking the minimization of a generalized Rayleigh Quotient:
+\begin{equation}
+    {\cal R}\left(z(t)\right) \triangleq
+        \frac{
+    \int_{\cal X} \norm{ 
+    \int_T \nabla^{r}  f(x,t) \overline {z(t)}\,\mathrm{d} t
+    }^2 \, \mathrm{d}x
+    }{
+    \int_{\cal X} \norm{
+    \int_T f(x,t) \overline {z(t)}\, \mathrm{d} t
+    }^2 \, \mathrm{d} x
+    }\,,
+\end{equation}
+%\begin{equation}
+%    \lambda_{i}^{2r} \triangleq
+%    {\arg\! \min}_{z_i(t)} 
+%    \frac{
+%    \int_{\cal X} \left( 
+%    \int_T \nabla^{r} f(x,t) z_i(t)\,\mathrm{d} t
+%    \right)^2 \, \mathrm{d}x
+%    }{
+%    \int_{\cal X} \left(
+%    \int_T f(x,t) z_i(t)\, \mathrm{d} t
+%    \right)^2 \, \mathrm{d} x
+%    }
+%    = {\arg\! \min}_{u_i(t)} \int_{\cal X} \left( \nabla^{r} v_i(x)\right)^2 \,\mathrm{d}x \,,
+%\end{equation}
+where $\nabla^{r}$ is the $r$-th order gradient operator. 
+Now, similar to SCD, the stationary points of the ${\cal R}\left(z(t)\right)$ are obtained from
+\begin{equation}
+    \lambda^{2r} = \underset{z(t)}{\min}\, {\cal R}\left(z(t)\right)\,.
+\end{equation}
+
+%This is usually the problem we tackle in {\em regularization methods} (e.g., Tikhonov regularization), or in vibration modal analysis.
+%For example, for axial and torsional vibrations of the uniform beam, where $f(x,t)$ describes the axial or angular displacements, we would consider $r=1$ or use regular gradient operator, and for the bending vibrations of the uniform Euler-Bernoulli beam, where $f(x,t)$ now describes the transverse displacement, we would let $r=2$ or use Laplacian operator.
+The decomposition obtained using this Rayleigh's quotient is called {\em smooth mode decomposition} (SMD), and it can be reduced to the following generalized integral eigenvalue problem using variational techniques:
+\begin{equation}
+    \int_T \left(\int_{\cal X} \overline{\nabla^{r} f(x,t)} \nabla^{r} f(x,s)\, \mathrm{d}x\right)  z_i(s)  \, ds \, =\lambda_{i}^{2r}  \int_T \left(\int_{\cal X} \overline{f(x,t)}f(x,s)\, \mathrm{d}x\right)  z_i(s)  \, ds\,,
+\end{equation}
+where $z_i(t)$ are not typically orthogonal. However, similar to SCD, we require that time coordinates $u_i(t)$ are not only unitary but form a biorthonormal set with $z_i(t)$ 
+\begin{equation}
+%\frac{1}{\norm{T}}
+\int_T \overline {z_i(t)} u_j(t)\,  \mathrm{d} t = \delta_{ij}.
+\end{equation}
+In addition, $v_i(x)$ are now orthonormal
+\begin{equation}
+%\frac{1}{\norm{{\cal X}}}
+\int_{\cal X} \overline {v_i(x)} v_j(x)\,  \mathrm{d} x = \delta_{ij} \quad \mathrm{and} \quad 
+%\frac{1}{\norm{{\cal X}}}
+\int_{\cal X} \overline{ \nabla^{r} v_i(x)} \nabla^{r} v_j(x)\,  \mathrm{d} x = \lambda^{2r}_i\delta_{ij}.
+\end{equation}
+
+% ----------------------------------------------------------------
+\section{Continuous Non-Hermitian Decompositions}
+
+The existence of more than one field function introduces new information through non-Hermtian cross-covariance matrices.
+Therefore, we now have an option of not only considering additional Hermitian autocovariances, but can also include non-Hemitian cross-covariances in the analysis.
+Again, we consider a set of fields that have exactly the same bases functions
+\begin{equation}
+	f_i(x,y) = \sum_{k=1}^\infty \sigma_{i,k} u_k(t) v_k(x)\,,
+\end{equation}
+where both basis functions cannot be orthonormal at the same time, but we can still make one of the basis orthonormal.
+Therefore, the cross-covariance functions for either orthonormal $u_i(t)$ or $v_i(x)$, respectively, can be written as
+\begin{equation}
+\begin{aligned}
+	K_{ij}(x,y) 
+	& =  
+%	\frac{1}{\norm{T}} 
+	\int_T 
+	\sum_{k=1}^\infty \overline{\sigma_{i,k} u_{k}(t)v_{k}(x)} 
+	\sum_{l=1}^\infty \sigma_{j,l} u_{l}(t) v_{l}(y)\, \mathrm{d} t\\
+	& =  
+	\sum_{k=1}^\infty \sum_{l=1}^\infty 
+	\overline{\sigma_{i,k}}\sigma_{j,l}\overline{v_{k}(x)} v_{l}(y)
+%	\frac{1}{\norm{T}} 
+	\int_T 
+	\overline{ u_{k}(t)} 
+	u_{l}(t)\, \mathrm{d} t\\
+	& =  
+	\sum_{k=1}^\infty 
+	\overline{\sigma_{i,k}}\sigma_{j,k}\overline{v_{k}(x)} v_{k}(y)
+\end{aligned}
+\end{equation}
+or, similarly,
+\begin{equation}
+	P_{ij}(t,s) =  
+	\sum_{k=1}^\infty 
+	\overline{\sigma_{i,k}}\sigma_{j,k}\overline{u_{k}(t)} u_{k}(s)\,.
+\end{equation}
+% ----------------------------------------------------------------
+\subsection{Continuous Generalized Characteristic Value Decomposition}
+
+{\em Continuous Generalized characteristic value decomposition} (GCVD) utilizes the adjoint functions $w_r(x)$ and $z_r(t)$ to the corresponding $v_r(x)$ and $w_r(t)$ bases. We consider the following inner products
+\begin{equation}
+\begin{aligned}
+%	\frac{1}{\norm{{\cal X}}} 
+	\int_{\cal X} K_{ij}(x,y) w_r(x) \mathrm{d} x 
+	& = \sum_{k=1}^\infty 
+	\overline{\sigma_{i,k}}\sigma_{j,k}v_{k}(y)
+%	\frac{1}{\norm{{\cal X}}} 
+	\int_{\cal X} \overline{v_{k}(x)} w_r(x) \mathrm{d} x \\
+	& = 
+	\overline{\sigma_{i,r}}\sigma_{j,r}v_{r}(y)
+\end{aligned}
+\end{equation}
+or, similarly,
+\begin{equation}
+%	\frac{1}{\norm{T}} 
+	\int_T P_{ij}(t,s) z_r(t) \mathrm{d} t = \overline{\sigma_{i,r}}\sigma_{j,r}u_r(s) \,.
+\end{equation}
+Now we can write the following
+%\begin{equation}
+%\begin{aligned}
+%	\frac{1}{\norm{{\cal X}}} \int_{\cal X} K_{ik}(x,y) w_r(x) \mathrm{d} x 
+%	&= 
+%	\overline{\sigma_{i,r}}\sigma_{k,r}v_{r}(y)\\
+%	\frac{1}{\norm{{\cal X}}} \int_{\cal X} K_{jk}(x,y) w_r(x) \mathrm{d} x 
+%	&= 
+%	\overline{\sigma_{j,r}}\sigma_{k,r}v_{r}(y)\,.
+%\end{aligned}
+%\end{equation}
+%%or, similarly,
+%%\begin{equation}
+%%\begin{aligned}
+%%	\frac{1}{\norm{T}} \int_{\cal X} P_{ik}(t,s) z_r(t) \mathrm{d} t &= \overline{\sigma_{i,r}}\sigma_{k,r}u_r(s) \\
+%%	\frac{1}{\norm{T}} \int_{\cal X} P_{kj}(t,s) z_r(t) \mathrm{d} t &= \overline{\sigma_{k,r}}\sigma_{j,r}u_r(s) \,.
+%%\end{aligned}
+%%\end{equation}
+%Since
+%\begin{equation}
+%	\overline{\sigma_{k,r}}\sigma_{j,r} = \overline{\sigma_{j,r}}\sigma_{k,r}\,,
+%\end{equation}
+%we can evaluate the following 
+ratio as
+\begin{equation}
+	\frac{\int_{\cal X} K_{ik}(x,y) w_r(x) \mathrm{d} x}{\int_{\cal X} K_{jk}(x,y) w_r(x) \mathrm{d} x }
+	= \frac{
+	\overline{\sigma_{i,r}}\sigma_{k,r}v_{r}(y)}{ 
+	\overline{\sigma_{j,r}}\sigma_{k,r}v_{r}(y)}
+%	=\frac{
+%	\overline{\sigma_{k,r}}\sigma_{i,r}}{ 
+%	\overline{\sigma_{k,r}}\sigma_{j,r}}
+	=\frac{
+	\sigma_{i,r}}{ 
+	\sigma_{j,r}}\triangleq\lambda_{ij,r} \,,
+\end{equation}
+which can be written as the corresponding generalized integral eigenvalue problems for $i\ne j$:
+\begin{equation}
+	\int_{\cal X} K_{ik}(x,y) w(x) \mathrm{d} x = \lambda_{ij} \int_{\cal X} K_{jk}(x,y) w(x) \mathrm{d} x\,,
+ \end{equation}
+where $\lambda_{ij} = \frac{\sigma_{i}}{\sigma_{j}}$, or similarly,
+\begin{equation}
+		\int_T P_{ik}(t,s) z(t) \mathrm{d} t=\lambda_{ij} \int_T P_{jk}(t,s) z(t) \mathrm{d} t\,.
+\end{equation}
+Once the adjoint eigenfunctions (basis) are known we can find the needed basis functions too  using \eqstwo{sp1}{sp2}.
+Please note that since at least one of the matrices in $\{K_{ik},K_{jk}\}$ or $\{P_{ik},P_{jk}\}$ is not Hermitian and $\lambda_{ij}\in \mathbb{C}$, we can no longer use Rayleigh's quotient as min-max theorem does not apply to the complex field of values.
+
+When we have only two scalar field functions $f_1(x,t)$ and $f_2(x,t)$, then
+\begin{equation}
+	\int_{\cal X} \left[K_{11}(x,y)+K_{12}(x,y)\right] w(x) \mathrm{d} x = \lambda_{12} \int_{\cal X} \left[K_{21}(x,y)+K_{22}(x,y)\right] w(x) \mathrm{d} x\,.
+\end{equation}
+
+If there are more than two field functions (i.e., $N>2$) we can also consider 
+\begin{equation}
+	\int_{\cal X}  \bar K_i(x, y) w(x) \mathrm{d} x = \lambda_{ij}  \int_{\cal X}  \bar K_j(x, y) w(x) \mathrm{d} x
+ \end{equation}
+or
+\begin{equation}
+		\int_T  \bar P_i(t, s) z(t) \mathrm{d} t= \lambda_{ij} \int_T \bar P_j (t, s)z(t) \mathrm{d} t\,,
+\end{equation}
+for $i\ne j$ and
+\begin{equation}
+	\bar K_i(x, y) = \sum_{k=1}^N K_{ik}(x, y)\,, \quad
+	\bar P_i(t, s) = \sum_{k=1}^N P_{ik}(t, s)\,.
+\end{equation}
+
+Finally, we can also write
+\begin{equation}
+	\int_{\cal X}  \sum_{i\ne j} \bar K_i(x, y) w(x) \mathrm{d} x = \bar \lambda_j  \int_{\cal X}  \bar K_j(x, y) w(x) \mathrm{d} x
+ \end{equation}
+or
+\begin{equation}
+		\int_T  \sum_{i\ne j} \bar P_i(t, s) z(t) \mathrm{d} t= \bar \lambda_j \int_T \bar P_j (t, s)z(t) \mathrm{d} t\,,
+\end{equation}
+where
+\begin{equation}
+	\bar \lambda_j = \sum_{i\ne j} \lambda_{ij} = \frac{1}{\sigma_j}\sum_{i\ne j} \sigma_i\,.
+\end{equation}
+
+%If we are looking for common spatial basis $v_i(x)$, we can require that individual temporal basis be orthonormal and consider the following inner product:
+%\begin{equation}
+%\begin{aligned}
+%	\frac{1}{\norm{T}} \int_{\cal X} K_{i,j}(x,y) v_k(x) \mathrm{d} x &= \frac{1}{\norm{T}}
+% \int_T  \left(\frac{1}{\norm{{\cal X}}}\int_{\cal X} \overline{f_i(x,t)}  v_k(x) \mathrm{d} x\right) f_j(y,t)\, \mathrm{d} t\\
+%  & = \frac{1}{\norm{T}}
+% \int_T  \sigma_k \overline{u_{i,k}(t)} f_j(y,t)\, \mathrm{d} t = \sigma_k^2 v_k(x)\\
+%\end{aligned}
+%\end{equation}
+%
+%where $\mathcal{D}: T \rightarrow T$ is some temporal linear operator (e.g., time derivative), $\mathcal{L}_{{\cal X}}: {\cal X} \rightarrow {\cal X}$ is some spatial linear operator (e.g., gradient operator), and the overline indicates complex conjugate of a variable.
+%For a more general complex characteristic values we consider asymmetric cross-covariances
+%\begin{equation}
+%	K_{ij} (x,y) \triangleq \frac{1}{\norm{T}} \int_T \overline{\mathcal{L}_{T,i} f(x,t)}\mathcal{L}_{T,j} f(y,t)\, \mathrm{d} t \quad \mathrm{or}\quad 
+%	P_{ij} (t,s) \triangleq \frac{1}{\norm{{\cal X}}} \int_{\cal X} \overline{\mathcal{L}_{{\cal X},i} f(x,t)}\mathcal{L}_{{\cal X},j} f(x,s)\, \mathrm{d} x\,,
+%\end{equation}
+%and generalize the above Fredholm integral equations to
+%\begin{equation}
+%	\int_{\cal X} K_{ik} (x,y)v(y) \mathrm{d} y = \lambda_{ij} \int_{\cal X} K_{jk} (x,y)v(y) \mathrm{d} y \quad \mathrm{or}\quad \int_T P_{ik}(t,s)u(t) \mathrm{d} s = \lambda_{ij} \int_T P_{jk}(t,s)u(t) \mathrm{d} s \,,
+%\end{equation}
+%where $i\ne j$.
+Direct solution to (generalized) Fredholm integral equation of the second kind has a substantial numerical cost of determining the eigenvalues and eigenfunctions of its autocovariance functions.
+However, this becomes much simpler when applied to discrete and finite fields, where we can use standard linear algebra to do the calculations.
+
+% ----------------------------------------------------------------
+\subsubsection{Example 1: Continuous State Variable Decomposition}
+
+State variable decomposition (S-VD) considers the generalized eigenvalue problem of an autocovariance of the displacement field 
+\begin{equation}
+	f(x,t) = \sum_{i=1}^\infty \xi_i(t) \phi_i(x)\,,
+\end{equation}
+where $\xi_i(t) = a_i e^{\lambda_i t}$, and the cross-covariance of displacement with its velocity field,
+\begin{equation}
+	\dot f(x,t) = \sum_{i=1}^\infty \lambda_i  \xi_i(t) \phi_i(x)\,,
+\end{equation}
+or
+\begin{equation}
+\begin{aligned}
+	\int_{\cal X} K_{vx} (x,y) \psi_k(y) \mathrm{d} y 
+	&= \int_{\cal X}
+	\int_T \sum_{i=1}^\infty \sum_{j=1}^\infty \overline \lambda_i  \overline {\xi_i(t)} \overline {\phi_i(x)}   \xi_j(t) \phi_j(y) \psi_k(y)\, \mathrm{d} t\, \mathrm{d} y\\
+	&= \sum_{i=1}^\infty \sum_{j=1}^\infty 
+	\overline \lambda_i \overline {\phi_i(x)}  \int_T \overline {\xi_i(t)}  \xi_j(t) \, \mathrm{d} t \int_{\cal X} \phi_j(y) \psi_k(y)\, \mathrm{d} y\\
+	&= \sum_{j=1}^\infty 
+	\overline \lambda_k \overline {\phi_k(x)}  \int_T \overline {\xi_k(t)}  \xi_j(t) \, \mathrm{d} t \\
+	&= \lambda_k \int_{\cal X} K_{xx} (x,y) \psi_k(y) \mathrm{d} y\,,
+\end{aligned}
+\end{equation}
+where adjoint modes $\psi_i(x)$ from a biorthonormal set with modes $\phi_i(x)$
+\begin{equation}
+	\int_{\cal X} \overline {\phi_i(x)} \psi_j(x) \, \mathrm{d} x = \delta_{ij}
+\end{equation}
+and S-VD can be expressed as the following generalized integral eigenvalue problem
+\begin{equation}
+	\int_{\cal X} K_{vx} (x,y) \psi_k(y) \mathrm{d} y = \lambda_k \int_{\cal X} K_{xx} (x,y) \psi_k(y) \mathrm{d} y\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsubsection{Example 2: Continuous Dynamic Mode Decomposition}
+
+Dynamic mode decomposition (DMD) considers a generally nonlinear scalar field $f(x,t)$ that can be expressed at a particular instant of time $t$ as
+\begin{equation}
+	f(x,t) = \sum_{i=1}^\infty \xi_i(t) \phi_i(x)
+\end{equation}
+and its $\tau$ time delayed version %$f(x,t+\tau)$ 
+\begin{equation}
+		f(x,t+\tau) = \sum_{i=1}^\infty \xi_i(t+\tau) \phi_i(x)\,.
+\end{equation}
+In general, $\xi_i(t)$ is some nonlinear function.
+However, if $\tau$ is small, we can assume that $\xi_i (t+\tau) \approx \xi_i(t) e^{\lambda_i \tau}$ on average for all time $t\in T$ and thus
+\begin{equation}
+	f(x,s+\tau) \approx \sum_{i=1}^\infty e^{\lambda_i\tau} \xi_i \phi_i(x)
+\end{equation}
+where the basis functions are the same as for the time instant $t$.
+Now, we can look at the following autocovariance
+%\begin{equation}
+%    K_s(x,y) = \int_T \overline{f(x, t+s)} f(y, t)\, \mathrm{d} t
+%\end{equation}
+%and evaluate it at $s=0$ and $s=\tau$ to get
+\begin{equation}
+\begin{aligned}
+	K_\tau &= \int_T \overline{f(x, t+\tau)} f(y, t)\, \mathrm{d} t\\
+	&\approx \int_T \sum_{i=1}^\infty e^{\overline \lambda_i\tau} \overline{\xi_i (t)} \overline{\phi_i(x)} \sum_{j=1}^\infty \xi_j (t) \phi_j(y) \mathrm{d} t\\
+%	&= \int_T \sum_{i=1}^\infty \sum_{j=1}^\infty   \overline{a_i}
+%	e^{\overline \lambda_i (t+\tau)} \overline{\phi_i(x)}  a_j e^{\lambda_j t} \phi_j(y)\, \mathrm{d} t\\
+	&= \sum_{i=1}^\infty \sum_{j=1}^\infty  e^{\overline \lambda_i\tau}  \overline{\phi_i(x)}\phi_j(y) \int_T \overline {\xi_i(t)} \xi_j(t)\, \mathrm{d} t\\
+\end{aligned}
+\end{equation}
+Now we can take its inner product with its adjoint basis function to get 
+\begin{equation}
+\begin{aligned}
+	\int_{\cal X} K_\tau (x, y) \psi_k(x) \mathrm{d} x	
+	&\approx \sum_{i=1}^\infty \sum_{j=1}^\infty  e^{\overline \lambda_i\tau}  \phi_j(y) \int_{\cal X} \overline{\phi_i(x)} \psi_k(x) \mathrm{d} x \int_T \overline {\xi_i(t)} \xi_j(t)\, \mathrm{d} t\,,\\
+	&= \sum_{j=1}^\infty  e^{\overline \lambda_k\tau}  \phi_j(y) \int_T \overline {\xi_i(t)} \xi_j(t)\, \mathrm{d} t\,,\\
+	&=  e^{\overline \lambda_k\tau} \sum_{j=1}^\infty  \phi_j(y) \int_T \overline {\xi_i(t)} \xi_j(t)\, \mathrm{d} t\,,\\
+	& =  e^{\overline \lambda_k\tau} \int_{\cal X} K_0(x, y) \psi_k(x) \mathrm{d} x\,.
+\end{aligned}
+\end{equation}
+Therefore, the DMD we can be written as the following generalized integral eigenvalue problem
+\begin{equation}
+	\int_{\cal X} K_\tau(x,y) \psi_i(x) \mathrm{d} x = \sigma_i(\tau)\int_{\cal X} K_0(x,y) \psi_i(x) \mathrm{d} x\,,
+\end{equation}
+where $\sigma_i(\tau) = e^{\overline \lambda_i\tau}$.
+
+% ----------------------------------------------------------------
+\section{Discrete Hermitian Decompositions}
+
+We embed a scalar field measured at $n$ spatial locations and sampled uniformly at $m$ instants of time into a $X \in \mathbb{C}^{m\times n}$, where the temporal variations are in columns, and spatial variations are in rows.
+In what follows we will describe the decomposition of this matrix $X$ and generalized decomposition of a set of either matrices $\{X_i\in\mathbb{C}^{m_i\times n}\}_{i=1}^N$ or $\{X_i\in\mathbb{C}^{m\times n_i}\}_{i=1}^N$, which can also be viewed as the transformations of the basis data matrix $X_1 = X$,
+\begin{equation}
+    X_i = \mathcal{L}_i X\quad \mathrm{or} \quad X_i = X \mathcal{G}_i^\mathrm{H}\,,
+\end{equation}
+where $\mathcal{L}_i$ are some temporal operators (e.g., time derivatives or time shifts) and $\mathcal{G}_i$ are some spatial operators (e.g., spatial gradients), with $X_1 = X$ (i.e., $\mathcal{L}_1 = I$ or $\mathcal{G}_1 = I$).
+
+We start by considering decompositions based only on Hermitian autocovariance matrices
+\begin{equation}
+    K_{ii} = X_i^\mathrm{H} X_i \quad \mathrm{or} \quad P_{ii} = X_i X_i^\mathrm{H}\,,
+\end{equation}
+in which case there are no constraints on either $m_i$ or $n_i$, respectively.
+
+% ----------------------------------------------------------------
+\subsection{Singular Value Decomposition}
+
+We start, by considering decomposing singular $X\in \mathbb{C}^{m\times n}$ into orthonormal temporal and spatial basis vectors
+\begin{equation}\label{SVDX}
+    X = U\Sigma V^\mathrm{H}\,,
+\end{equation}
+where both time coordinates in $U$ (i.e., left singular vectors) and spatial modes $V$ (i.e., right singular vectors) are unitary ($U^\mathrm{H} U = I$ and  $V^\mathrm{H} V = I$), and $\Sigma = \mathrm{diag}(\sigma_{i})$ is a diagonal matrix of modal weights or {\em singular values} ($\sigma_{i}\ge 0$ and $\sigma_{i}^2$ reflects the energy contained in each modal pair $\{u_i,v_i\}$).
+We refer to this type of matrix decomposition as {\em singular value decomposition} (SVD).
+
+SVD is equivalent to {\em proper orthogonal decomposition} through the eigendecomposition of an autocovariance matrix for $X$, as long as columns of the matrix $X$ are zero mean.
+Let us consider separately spatial and temporal Hermitian autocovariance matrices,
+\begin{equation}
+    K = %\frac{1}{m-1}
+    X^\mathrm{H}X \qquad \mathrm{and} \qquad P =  %\frac{1}{n-1}
+    XX^\mathrm{H}\,,
+\end{equation}
+respectively. 
+The matrices $K$ and $P$ are not only Hermitian, but they are also positive semidefinite.
+In particular, we can determine POD by finding the stationary values and the corresponding eigenvectors of the following Rayleigh's quotients:
+\begin{equation}
+    \sigma(v)^2={\cal R}(v) = \frac{\norm{Xv}^2}{\norm{v}^2}\,\quad \mathrm{or} \quad \sigma(u)^2={\cal R}(u) = \frac{\norm{X^\mathrm{H}u}^2}{\norm{u}^2}\,.
+\end{equation}
+Using the variational techniques, POD results into either of the following Hermitian eigenvalue problems
+\begin{equation}
+    K v_i = \sigma_i^2 v_i \qquad \mathrm{or} \qquad P u_i= \sigma_i^2 u_i\,.
+\end{equation}
+In practice, the POD is usually accomplished by SVD of a data matrix $X$ as in \eq{SVDX}.
+
+When $m > n$ and assuming $X$ has full column rank ($\mathrm{rank}(X) = n$), we have an overdetermined system in terms of mode shapes (spatial basis) in \eq{SVDX} (i.e., the matrix $K$ is positive definite), where $V = [v_1, v_2, \cdots, v_n] \in \mathbb{C}^{n\times n}$ contains unique $n$ {\em proper orthogonal modes} (POMs or right singular vectors), $\Sigma \in \mathbb{R}^{n\times n}$ is a diagonal matrix of {\em proper orthogonal values} (POVs or singular values), and $U = [u_1, u_2, \cdots, u_n]\in \mathbb{C}^{m\times n}$ contains the corresponding {\em proper orthogonal coordinates} (POCs or left singular vectors). However, this problem is underdetermined in terms of temporal basis. Thus, when the full temporal basis is required, the Gram-Schmidt procedure is used to obtain the remaining orthogonal temporal basis vectors in the null space of $X$.
+
+When $m < n$ and assuming $X$ has full row rank ($\mathrm{rank}(X) = m$), we have an overdetermined system in terms of modal coordinates (temporal basis) in \eq{SVDX} (i.e., the matrix $P$ is positive definite), and we can get unique $m$ POCs in matrix $U = [u_1, u_2, \cdots , u_m] \in \mathbb{C}^{m\times m}$, the corresponding POMs in $V = [v_1, v_2, \cdots, v_m] \in\mathbb{C}^{n\times m}$, with $\Sigma \in \mathbb{R}^{m\times m}$. However, this problem is underdetermined in terms of spatial basis. Thus, when the full spatial basis is required, the Gram-Schmidt procedure is used to obtain the remaining orthogonal spatial basis vectors in the null space of $X$.
+
+% ----------------------------------------------------------------
+\subsection{Truncated Singular Value Decomposition}
+
+In many practical situations we are presented with data matrices that do not have either full row or full column ranks or $$\mathrm{rank}(X) < \min(m,n).$$ 
+Therefore, we are dealing with the underdetermined problem in terms of either basis (i.e., both matrices $K$ and $P$ are rank-deficient).
+In which case, one usually considers {\em truncated} SVD (TSVD) of the matrix $X$
+\begin{equation}
+    X \cong \tilde U \tilde \Sigma \tilde V^\mathrm{H}\,,
+\end{equation}
+where $\tilde U \in \mathbb{C}^{m\times r}$, $\tilde V \in \mathbb{C}^{n\times r}$, $\tilde \Sigma \in \mathbb{R}^{r\times r}$, and $r\le\mathrm{rank}(X)$.
+When $r=\mathrm{rank}(X)$, then we can obtain the truncated decomposition
+\begin{equation}
+    X = \tilde U \tilde \Sigma \tilde V^\mathrm{H}\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsection{Large Scale Underdetermined Singular Value Decomposition}
+In addition to TSVD, other methods provide an approximate solution for the underdetermined SVD like {\em regularization} or {\em randomized matrix projection}.
+For example, the spatially-underdetermined POD problem commonly arises in situations where we have a large spatial resolution (due to abundance of sensors or other spatial factors) and low temporal resolution due to the constraints on data collection time (e.g., oceanographic, geophysical, or atmospheric measured variable data sets).
+Sometimes, it might be inconvenient or computationally restrictive to do a full-scale TSVD of $X\in \mathbb{C}^{m\times n}$ when $m\ll n$. 
+Then, it might be more expedient to project the original data matrix onto a lower-dimensional subspace while retaining all the essential information, do the decomposition in this low-dimensional space, and then unfold the results into the full space.
+
+The basic idea is to find the orthonormal matrix $Q\in\mathbb{C}^{n\times r}$, where $r< \mathrm{rank}(X)$, that satisfies
+\begin{equation}
+    \norm{X- XQQ^\mathrm{H}} \le c\, \sigma_{r+1}\,,
+\end{equation}
+where $\sigma_{r+1}$ is the $(r+1)$-th largest singular value of our matrix $X$ and $c = c(r)$ is some constant.
+In other words, we are looking for a coordinate transformation $\tilde X = X Q\in \mathbb{R}^{m\times r}$ that preserves all the essential information in $X$. 
+In TSVD this is equivalent to choosing $Q=\tilde V$.
+Alternatively, we can generate a random Gaussian matrix $\Omega \in \mathbb{C}^{m\times r}$ in the transformed coordinate space and look at the cross-correlation matrix %$Y=X^\mathrm{T} \Omega \in \mathbb{R}^{n\times l}$.
+$Y=X^\mathrm{H}\Omega \in \mathbb{C}^{n\times r}$.
+Then, use the orthonormal matrix $Q$ from QR decomposition of $Y=QR$ for the needed transformation. 
+Now if we do the SVD of the following full column rank matrix:
+\begin{equation}
+    \tilde X \triangleq X Q = \tilde U  \tilde \Sigma \tilde V^\mathrm{H}\,.
+\end{equation}
+Then the $r$ approximated spatial modes are given by
+\begin{equation}
+    {V} \cong Q \tilde V\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\section{Generalized Singular Value Decomposition}
+
+Sometimes it is appropriate to introduce some constraints on the decomposition basis, or we deal with two different data matrices that are expected to have the same temporal or spatial basis.
+In these situations, we usually look at the {\em generalized singular value decomposition} (GSVD) of two matrices $X_1\in \mathbb{C}^{m\times n}$ and $X_2 \in \mathbb{C}^{p\times q}$.
+If we are looking for the same spatial basis vectors in $V\in \mathbb{C}^{n\times n}$, we require  $q \equiv n$ to get 
+\begin{equation}\label{GSVD}
+    X_1 = U_1 \Sigma_{1} V^\mathrm{H} \quad \mathrm{and} \quad  X_2 = U_2 \Sigma_{2} V^\mathrm{H}\,,
+\end{equation}
+where $U_1\in \mathbb{C}^{m\times n}$ and $U_2\in \mathbb{C}^{p\times n}$ are unitary (i.e., $U_i^\mathrm{H} U_i = I$), $V\in\mathbb{C}^{n\times n}$ is a full rank matrix on unit vectors, $\Sigma_{i} = \mathrm{diag}(\sigma_k) \in \mathbb{R}^{n\times n}$, and $\lambda_{i} = \frac{\sigma_{1,i}}{\sigma_{2,i}}$ are generalized sigular values.
+Alternatively, if we are looking for the same temporal basis vectors in $U\in \mathbb{C}^{m\times m}$, we require  $p \equiv m$ to get 
+\begin{equation}\label{GSVD1}
+    X_1 = U \Sigma_{1} V_1^\mathrm{H} \quad \mathrm{and} \quad  X_2 = U \Sigma_{2} V_2^\mathrm{H}\,,
+\end{equation}
+where $V_1\in \mathbb{C}^{m\times n}$ and $V_2\in \mathbb{C}^{m\times q}$ are unitary (i.e., $V_i^\mathrm{H} V_i = I$), $U\in\mathbb{C}^{m\times m}$ is a full rank matrix on unit vectors, $\Sigma_{i} = \mathrm{diag}(\sigma_k) \in \mathbb{R}^{m\times m}$, and $\lambda_{i} = \frac{\sigma_{1,i}}{\sigma_{2,i}}$ are generalized sigular values.
+
+% ----------------------------------------------------------------
+\subsection{Generalized Proper Orthogonal Decomposition}
+GSVD is equivalent to {\em generalized proper orthogonal decomposition} (GPOD) through the generalized eigen-decomposition of autocovariances for the data matrices in $X_1$ and $X_2$.
+In particular, we consider the following spatial and temporal positive semidefinite Hermitian autocovariance matrices separately,
+\begin{equation}
+    K_{ii} = %\frac{1}{m-1}
+    X_i^\mathrm{H}X_i \qquad \mathrm{and} \qquad P_{ii} =  %\frac{1}{n-1}
+    X_iX_i^\mathrm{H}\,,
+\end{equation}
+and look at GSVD from the data projection perspective. 
+In particular, \eqstwo{GSVD}{GSVD1} can be rewritten as
+\begin{equation}\label{GSVD2}
+    X_i  V^\mathrm{-H}= U_i \Sigma_{i} \quad \mathrm{or} \quad      U^{-1} X_i = \Sigma_{i} V_1^\mathrm{H}\,.
+\end{equation}
+Now we can denote the corresponding conjugate modal matrices as
+\begin{equation}
+    W =  V^\mathrm{-H} \quad \mathrm{and} \quad Z =  U^\mathrm{-H}
+\end{equation}
+and look at the data matrices projected either spatially or temporarily,
+\begin{equation}
+    Y_i = X_i W \quad \mathrm{or} \quad Y_i = Z^\mathrm{H}X_i \,,
+\end{equation}
+respectively, or
+\begin{equation}
+    Y_i = U_i\Sigma_i \quad \mathrm{or} \quad Y_i = \Sigma_i V_i^\mathrm{H} \,.
+\end{equation}
+Now, we can look at their autocovariances to get
+\begin{equation}
+    Y_i^\mathrm{H} Y_i = W^\mathrm{H}X_i^\mathrm{H}X_iW = W^\mathrm{H}K_{ii}W = \Sigma_i^2\quad \mathrm{or} \quad Y_i Y_i^\mathrm{H} = Z^\mathrm{H}X_iX_i^\mathrm{H}Z = Z^\mathrm{H}P_{ii}Z = \Sigma_i^2\,.
+\end{equation}
+Furthermore, if we rearrange the last equalities of the above as follows
+\begin{equation}
+    K_{11}W = W^\mathrm{-H}\Sigma_1^2 = K_{22} W \Sigma_1^2\Sigma_2^{-2}= K_{22} W \Lambda^2 \quad \mathrm{or} \quad P_{11}Z = Z^\mathrm{-H}\Sigma_1^2 = P_{22} Z \Sigma_1^2\Sigma_2^{-2}= P_{22} Z \Lambda^2\,,
+\end{equation}
+we obtain GPOD as the solution to the either of the following generalized eigenvalue problems:
+\begin{equation}
+    K_{11} w_i = \lambda_{i}^2 K_{22} w_i \qquad \mathrm{or} \qquad P_{11} z_i= \lambda_{i}^2 P_{22} z_i\,,
+\end{equation}
+where $\{w_i\}$ and $\{z_i\}$ form a biorthonormal sets with $\{v_i\}$ and $\{u_i\}$, respectively.
+
+We can obtain the same result by finding the stationary values and the corresponding eigenvectors of the following Rayleigh's quotients:
+\begin{equation}
+    \lambda(w)^2={\cal R}(w) = \frac{\norm{X_1w}^2}{\norm{X_2w}^2}\,\quad \mathrm{or} \quad \lambda(z)^2={\cal R}(z) = \frac{\norm{X_1^\mathrm{H}z}^2}{\norm{X_2^\mathrm{H}z}^2}\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsection{Discrete Smooth Coordinate and Smooth Mode Decompositions}
+
+We obtain the discrete SCD by finding the stationary values of the following generalized Rayleigh's quotient:
+\begin{equation}
+    \lambda(w)^{2r}={\cal R}(w) = \frac{\norm{{\cal D}^{r} X w}^2}{\norm{Xw}^2}\,,
+\end{equation}
+which results into the following generalized eigenvalue problem of the temporal covariance matrices (for $m \ge n$):
+\begin{equation}
+    \left[\left({\cal D}^{r} X\right)^\mathrm{H}{\cal D}^{r} X\right] w_i=\lambda_{i}^{2r}\left[X^\mathrm{H}X\right] w_i\,,
+\end{equation}
+where we require that the modal vectors $v_i$ form a biorthonormal set with the generalized eigenvectors $w_i$ ($V=W^\mathrm{-H}$).
+The practical SCD is usually accomplished by GSVD of the matrix pair $\left[{\cal D}^{r} X, X\right]$ (for $m \ge n$):
+\begin{equation}
+    {\cal D}^{r} X = U_r\Sigma_r V^\mathrm{H} \quad \mathrm{and}\quad X = U\Sigma V^\mathrm{H},
+\end{equation}
+where $U^\mathrm{H}U = I$ and $U_r^\mathrm{H} U_r =I$ are unitary, $V$ is a nonsingular matrix composed of unit vectors $\norm{v_i} = 1$, and $\lambda_{i}^r = \Sigma_r(i,i)/\Sigma(i,i)$ (or $\Lambda^r=\Sigma_r\Sigma^{-1}$).
+
+We can obtain the discrete SMD by finding the stationary values of the following generalized Rayleigh's quotient
+\begin{equation}
+    \lambda(z)^{2r}={\cal R}(z) = \frac{\norm{\nabla^{r} X^\mathrm{H} z}^2}{\norm{X^\mathrm{H}z}^2}\,,
+\end{equation}
+which results into the following generalized eigenvalue problem of the spatial covariance matrices (for $m \le n$):
+\begin{equation}
+     \left[\left(\nabla^{r} X^\mathrm{H}\right)^\mathrm{H}\nabla^{r} X^\mathrm{H}\right] z_i=\lambda_{i}^{2r}\left[XX^\mathrm{H}\right] z_i\,,
+\end{equation}
+where we require that the coordinates $u_i$ form a biorthonormal set with the generalized eigenvectors $z_i$ ($U=Z^\mathrm{-H}$).
+The practical SMD solution can be obtained by the GSVD of matrix pair $\left[\nabla^{r} X^\mathrm{H}, X^\mathrm{H}\right]$ (for $m\le n$):
+\begin{equation}
+     \nabla^{r} X^\mathrm{H} = V_r\Sigma_r U^\mathrm{H} \quad \mathrm{and}\quad X^\mathrm{H} = V \Sigma U^\mathrm{H}\,,
+\end{equation}
+where $V^\mathrm{H}V = I$ and $V_r^\mathrm{H} V_r =I$ are unitary, $U$ is a nonsingular square matrix composed of unit vectors $\norm{u_i} = 1$, and $\lambda_{i}^r = \Sigma_r(i,i)/\Sigma(i,i)$ (or $\Lambda^r=\Sigma_r\Sigma^{-1}$).
+
+In general, we can define some temporal operators $D_1\in \mathbb{C}^{p_1\times m}$ and $D_2\in \mathbb{C}^{p_2\times m}$ (with both $p_1 \ge n$ and $p_2\ge n$) or spatial operators $L_1\in \mathbb{C}^{q_1\times n}$ and $L_2\in \mathbb{C}^{q_2\times n}$ (with both $q_1\ge m$ and $q_2\ge m$) possessing the needed properties and then consider the following generalized Rayleigh's quotients:
+\begin{equation}
+    \lambda(w)^2={\cal R}(w) = \frac{\norm{D_1 Xw}^2}{\norm{D_2 Xw}^2},\quad \mathrm{or}\quad \lambda(z)^{2}={\cal R}(z) = \frac{\norm{L_1 X^\mathrm{H}z}^2}{\norm{L_2 X^\mathrm{H} z}^2}\,.
+\end{equation}
+The stationary value problems of the above quotients is solved by the following GSVD problems:
+\begin{equation}
+    X_1 \triangleq D_1 X = U_1\Sigma_{1} V^\mathrm{H} \quad \mathrm{and}\quad X_2 \triangleq D_2 X = U_2\Sigma_{2} V^\mathrm{H}\,, \quad \mathrm{for} \quad m\ge n\,.
+\end{equation}
+or
+\begin{equation}
+    X_1 \triangleq X L_1^\mathrm{H} = U \Sigma_{1} V_1^\mathrm{H} \quad \mathrm{and}\quad X_2 \triangleq X L_2^\mathrm{H} = U \Sigma_{2} V_2^\mathrm{H}\,, \quad \mathrm{for} \quad m\le n\,,
+\end{equation}
+where $\lambda_{i} = \Sigma_{1}(i,i)/\Sigma_{2}(i,i)$.
+We can choose the operators $D_i$ and $L_i$ similar to SCD or SMD, or they can be tailored to emphasize some other physical properties in the data.
+
+
+% ----------------------------------------------------------------
+\subsection{Working Directly with Autocovariance Matrices}\label{3_3}
+
+While it is more numerically stable to solve SVD or GSVD problems than eigenvalue or generalized eigenvalue problems, it might be more convenient or practical to work with scaled autocovariance matrices of the matrix pair $\left[X_1, X_2\right]$:
+\begin{equation}
+    K_{11} \triangleq X_1^\mathrm{H}X_1 = V \Sigma_{1}^2V^\mathrm{H}\,, \quad \mathrm{and} \quad K_{22} \triangleq X_2^\mathrm{H} X_2 = V\Sigma_{2}^2V^\mathrm{H}\,,
+\end{equation}
+or
+\begin{equation}
+    P_{11} \triangleq X_1 X_1^\mathrm{H} = U \Sigma_{1}^2U^\mathrm{H}\,, \quad \mathrm{and} \quad P_{22} \triangleq X_2 X_2^\mathrm{H} = U \Sigma_{2}^2U^\mathrm{H}\,.
+\end{equation}
+Then, the SVD problems can be solved by eigendecomposition of $K_{ii}$ or $P_{ii}$ matrices, and the GSVD problems can be solved by eigendecomposition of $K_{ii}K_{jj}^{-1}$ or $P_{ii}P_{jj}^{-1}$,
+\begin{equation}
+    K_{ii}K_{jj}^{-1} V = V \Sigma_{ij} \quad \mathrm{or} \quad P_{ii}P_{jj}^{-1} U = U \Sigma_{ij}\,,
+\end{equation}
+where $\Sigma_{ij} = \Sigma_{i}^2\Sigma_{j}^{-2}$.
+It is more robust to consider more balanced eigenvalue problems:
+\begin{equation}
+    \left(K_{ii}K_{jj}^{-1} + K_{jj}K_{ii}^{-1}\right) V = V \left(\Sigma_{ij}+\Sigma_{ij}^{-1}\right) \quad \mathrm{or} \quad \left(P_{ii}P_{jj}^{-1} + P_{jj}P_{ii}^{-1}\right) U = U \left(\Sigma_{ij}+\Sigma_{ij}^{-1}\right)\,,
+\end{equation}
+to determine the needed eigenvectors and then get the remaining components. Note that $\Sigma_{ij}=\Sigma_{ji}^{-1}$.
+
+It is even more stable to work with QR decompositions of $X_i=Q_iR_i$, where $Q_i$ are orthonormal matrices, and $R_i$ are upper triangular matrices.
+Then,
+\begin{equation}
+    K_{ii} = R_i^\mathrm{H}R_i\,.
+\end{equation}
+Now, we can define a matrix
+\begin{equation}
+    R_{ij} = R_iR_j^{-1}\,,
+\end{equation}
+which can be decomposed using SVD
+\begin{equation}
+    R_{ij} = \tilde U_{ij} \tilde \Sigma_{ij} \tilde V_{ij}^\mathrm{H}\,,
+\end{equation}
+where $\tilde U_{ij}$ are the eigenvectors of $R_{ij}R_{ij}^\mathrm{H}$:
+\begin{equation}
+     R_{ij} R_{ij}^\mathrm{H} \tilde U_{ij} = \tilde U_{ij} \tilde \Sigma^2_{ij} \,.
+\end{equation}
+From the original GSVD problem:
+\begin{equation}
+    K_{ii}K_{jj}^{-1} V = V \Sigma_{ij}
+\end{equation}
+or 
+\begin{equation}
+    R_i^\mathrm{H}\left(R_iR_j^{-1}\right)R_j^\mathrm{-H} V = V \Sigma_{ij}
+\end{equation}
+\begin{equation}
+    R_{ij} R_j^\mathrm{-H} V = R_i^\mathrm{-H} V \Sigma_{ij}
+\end{equation}
+Now, remembering that $R_j^\mathrm{-H} = R_{ij}^\mathrm{H} R_i^\mathrm{-H}$, we get
+\begin{equation}
+    R_{ij} R_{ij}^\mathrm{H} \left(R_i^\mathrm{-H} V\right) = \left(R_i^\mathrm{-H} V\right) \Sigma    _{ij}
+\end{equation}
+Therefore,
+\begin{equation}
+    R_i^\mathrm{-H}V = \tilde U_{ij}\,\quad\mathrm{or}\quad V = R_i^\mathrm{H} \tilde U_{ij}\,, \quad \mathrm{and} \quad \Sigma_{ij} = \tilde \Sigma_{ij}^2\,.
+\end{equation}
+Thus, the spatial modes for the matrix pair $[K_{ii},K_{jj}]$, are given by either
+\begin{equation}
+    V = R_i^\mathrm{H} \tilde U_{ij} = R_j^\mathrm{H} \tilde U_{ji}\,.
+\end{equation}
+
+Then, after making all the columns in $V$ unitary, we can determine the other components as:
+\begin{equation}
+    M_i=\left[m_{i,1}, \cdots, m_{i,n} \right] = X_i V^\mathrm{-H}\,, \quad \Sigma_{i} = \mathrm{diag} \left(\norm{m_{i,k}}\right)\,, \quad \mathrm{and} \quad U_i = M_i \Sigma_{i}^{-1}\,.
+\end{equation}
+
+Similarly, if we use the QR decomposition of $X_i^\mathrm{H} = Q_iR_i$, and leave all the definitions the same as in $K_{ii}$ case (i.e., $P_{ii} = R_i^\mathrm{H}R_i$, etc.), we get:
+\begin{equation}
+    U = R_i^\mathrm{H} \tilde U_{ij} = R_j^\mathrm{H} \tilde U_{ji}\
+\end{equation}
+Then, after making all the columns in $U$ unitary, we can determine the other components as:
+\begin{equation}
+    M_i=\left[m_{i,1}, \cdots, m_{i,m} \right] = H_i^\mathrm{H} U^\mathrm{-H}\,, \quad \Sigma_{i} = \mathrm{diag} \left(\norm{m_{i,k}}\right)\,, \quad \mathrm{and} \quad V_i = M_i \Sigma_{i}^{-1}\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsection{Discrete GSVD for the Underdetermined Problems}
+
+In previous sections, we have described the procedures for GSVD decomposition for overdetermined problems. 
+In the MBD we looked at the full column rank matrices $X_1\in\mathbb{C}^{m_1\times n}$ and $X_2\in\mathbb{C}^{m_2\times n}$ ($m_1>n$, $m_2>n$), and their decompositions $$X_i=U_i\Sigma_{i} V^\mathrm{H}\,,$$ where we are looking for common spatial modes $V\in\mathbb{C}^{n\times n}$.
+In the CBD, we considered full row rank matrices $X_1\in\mathbb{C}^{m\times n_1}$ and $X_2\in\mathbb{C}^{m\times n_2}$ ($m<n_1$, $m<n_2$) $$X_i=U \Sigma_{i} V_i^\mathrm{H}\,,$$  where we solved for common temporal coordinates $U\in\mathbb{C}^{m\times m}$.
+In contrast, underdetermined problems arise when we need to find common temporal bases in the case when $m>n$ or we need common spatial bases for problems with $m<n$.
+Also, if the rank of the data matrices is smaller than either spatial or temporal dimensions, we get the undetermined problem for both spatial and temporal basis.
+
+As an illustration for the procedure to dealing with underdetermined problems, let us consider the decomposition of matrices $\{X_1, X_2\}$, which do not necessarily have the full row rank with ($m_1<n$ and  $m_2<n$).
+In particular, we are looking for their common spatial modes/basis in $V$ as
+\begin{equation}
+    X_1 = U_1 \Sigma_{1} V^\mathrm{H}\,, \quad X_2 = U_2 \Sigma_{2} V^\mathrm{H}\,.
+\end{equation}
+This problem is underdetermined and cannot be solved by standard GSVD, where we need $K_{ii}^{-1}$ and $K_{ii} \in \mathbb{R}^{n\times n}$ but its $\mathrm{rank}(K_{ii})\le m_i$.
+
+The idea is to find the orthonormal matrix $Q\in\mathbb{C}^{n\times l}$, where $l<\min\left(\left\{\min(m_i), \min(\mathrm{rank}(X_i))\right\}\right)$, that satisfies
+\begin{equation}
+    \norm{X- XQQ^\mathrm{H}} \le c \sigma_{l+1}\,,
+\end{equation}
+where $\sigma_{l+1}$ is the $(l+1)$-th largest singular value of a matrix containing all the unique row vectors from the data matrices
+%$X=[X_1;X_2]$ 
+$X=X_1\cup X_2$ and $c = c(l)$ is some constant.
+In other words, we are looking for a coordinate transformation $\tilde X_i = X_i Q\in \mathbb{C}^{m_i\times l}$ ($m_i > l$), such that the significant/dominant information in $X_i$'s are preserved. 
+
+One way to accomplish this is to do the TSVD of the concatenated matrix $X \in \mathbb{C}^{(m_1+m_2)\times n}$
+\begin{equation}
+    X \triangleq \left[ \begin{matrix}
+        X_1\\
+        X_2
+    \end{matrix} \right]\cong \bar X = \bar U \bar \Sigma \bar V^\mathrm{H}\,,
+\end{equation}
+where $\bar \Sigma=\mathrm{diag}\left(\{\sigma_k\}_{k=1}^l\right)\in \mathbb{R}^{l\times l}$ is composed of $l$ largest singular values of $X$, and $\bar U\in \mathbb{C}^{(m_1+m_2)\times l}$ and $\bar V\in \mathbb{C}^{n\times l}$ are the corresponding left and right singular vectors. Then, we can use $Q = \bar V$ for the needed coordinate transform.
+
+When the dimensionality of problem does not allow TSVD, we can generate a random Gaussian matrix $\Omega \in \mathbb{C}^{(m_1+m_2)\times l}$ in the transformed coordinate space and look at the cross-correlation matrix %$Y_i=X_i^\mathrm{T} \Omega \in \mathbb{R}^{n\times l}$.
+$Y=X^\mathrm{H}\Omega \in \mathbb{C}^{n\times l}$.
+Then, we use an orthonormal matrix from a QR decomposition of $Y=QR$ to find the needed $Q$. 
+
+Now, we can do the GSVD decomposition of the following full column rank matrices:
+\begin{equation}
+    \tilde X_1 \triangleq X_1Q = \tilde U_1  \tilde \Sigma_{1} \tilde V^\mathrm{H}\,, \quad \tilde X_2 \triangleq X_2Q = \tilde U_2 \tilde \Sigma_{2} \tilde V^\mathrm{H}\,.
+\end{equation}
+The approximated $l$ spatial modes are given by
+\begin{equation}
+    {V} \cong Q \tilde V\,.
+\end{equation}
+
+Another option is to do the eigendecomposition of the following matrix
+\begin{equation}
+    \tilde S = \frac{1}{2}\left(\tilde K_{11}\tilde K_{22}^{-1}+\tilde K_{22}\tilde K_{11}^{-1}\right)\,,
+\end{equation}
+where $\tilde K_{ii} = \tilde X_i^\mathrm{H} \tilde X_i$ as shown in the beginning of Sec.~\ref{3_3} and then find its eigen-decomposition 
+\begin{equation}
+    \tilde S \tilde V = \tilde  V \tilde \Lambda\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\section{Higher-Order Generalized Singular Value Decomposition}
+
+In this section, we consider a decomposition that seeks either common spatial or common temporal basis for the decomposition of a set of matrices.
+In particular, for a discrete set of scalar field matrices $\{X_i\}_{i=1}^N$, {\em higher-order generalized singular value decomposition} (HO-GSVD)
+\begin{equation}
+    X_i = U_i \Sigma_i V^\mathrm{H} \quad \mathrm{or}\quad X_i = U \Sigma_i V_i^\mathrm{H}
+\end{equation} 
+considers the following Hermitian auto-covariance matrices, respectively,
+\begin{equation}
+    K_{ii} \triangleq X_i^\mathrm{H} X_i \quad \mathrm{or}\quad 
+    P_{ii} \triangleq X_i X_i^\mathrm{H}\,,
+\end{equation}
+where $(\cdot)^\mathrm{H}$ indicates Hermitian or conjugate transpose of $(\cdot)$, $X_i\in\mathbb{C}^{m_i\times n}$ for $K_{ii}$, and $X_i\in \mathbb{C}^{m\times n_i}$ for $P_{ii}$.
+
+
+% ----------------------------------------------------------------
+\subsection{Mode-Based HO-GSVD}
+
+Mode-based HO-GSVD of a set of discrete scalar field matrices seeks common spatial basis and decomposes them into
+\begin{equation}
+    X_i = U_i \Sigma_i V^\mathrm{H}\,,
+\end{equation}
+where $\left\{X_i\in\mathbb{C}^{m_i\times n}\right\}_{i=1}^N$ ($m_i>n$), $U_i\in\mathbb{C}^{m_i\times n}$ are unitary, $\Sigma_i\in\mathbb{R}^{n\times n}$ are diagonal, and $V\in\mathbb{C}^{n\times n}$ is a full rank matrix of unit vectors.
+Therefore, we can express our Hermitian autocovariance matrices as
+\begin{equation}
+    K_{ii} = V \Sigma_i U_i^\mathrm{H}  U_i\Sigma_i V^\mathrm{H} = V\Sigma_{i}^2V^\mathrm{H}
+\end{equation}
+Thus,
+\begin{equation}
+    K_{ii}K_{jj}^{-1} = V\Sigma_{i}^2\Sigma_{j}^{-2}V^{-1} \quad \mathrm{and} \quad K_{jj}^{-1}K_{ii} = V^\mathrm{-H}\Sigma_{j}^{-2}\Sigma_{i}^2V^{H}\,,
+\end{equation}
+which allows us to formulate the corresponding generalized eigenvalue problems in the matrix form as
+\begin{equation}
+     K_{jj}^{-1} V = K_{ii}^{-1} V \Lambda_{ij}^2 \quad \mathrm{and} \quad K_{ii} W = K_{jj} W\Lambda_{ij}^2\,,
+\end{equation}
+where
+\begin{equation}
+    W = V^\mathrm{-H}\quad \mathrm{and}\quad \Lambda_{ij}^2 = \Sigma_{i}^2\Sigma_{j}^{-2} = \mathrm{diag}(\lambda_{ij,k}^2)\,.
+\end{equation}
+Therefore, we can consider the following Hermitian eigenvalue problem
+\begin{equation}\label{gevProb}
+    K_{ii}K_{jj}^{-1} v_k = \lambda^2_{ij,k} v_k\,,    
+\end{equation}
+or the following Hermitian generalized eigenvalue problem in terms of adjoint basis to $v_i$
+\begin{equation}
+    K_{ii} w_k = \lambda^2_{ij,k} K_{jj}w_k\,,
+\end{equation}
+or in a matrix form
+\begin{equation}
+        K_{ii} W = K_{jj}W \Lambda^2_{ij}\,.
+\end{equation}
+Once we know $W$, we can get modes using $V = W^{-\mathrm{H}}$.
+Since  \eq{gevProb} should be true for all $i$ and $j$, we sum \eq{gevProb} over all $i$ and $j\ne i$ to get
+\begin{equation}
+     S v = \lambda v\,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+    S & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(K_{ii}K_{jj}^{-1}+K_{jj}K_{ii}^{-1}\right)\,,\\
+    \lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda^2_{ij}+\lambda^2_{ji}\right)\,.
+\end{aligned}    
+\end{equation}
+Then, after making all the columns $v_i$ in $V$ unitary, we can determine the other components by defining:
+\begin{equation}
+    M_i\triangleq\left[m_{i,1}, \cdots, m_{i,n} \right] = X_i V^\mathrm{-H}\,,
+\end{equation}
+and by letting
+\begin{equation}
+    \Sigma_{i} = \mathrm{diag} \left(\norm{m_{i,k}}\right) \qquad \Rightarrow \qquad U_i = M_i \Sigma_{i}^{-1}\,.
+\end{equation}
+
+Alternatively, we might want to obtain the conjugate modes directly.
+In that case, we instead consider the following eigenvalue problem:
+\begin{equation}
+     C w = \lambda w\,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+    C & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(K_{jj}^{-1}K_{ii}+K_{ii}^{-1}K_{jj}\right)\,,\\
+    \lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda^2_{ij}+\lambda^2_{ji}\right)\,.
+\end{aligned}    
+\end{equation}
+
+
+% ----------------------------------------------------------------
+\subsubsection{Example: HO-SCD}
+
+
+% ----------------------------------------------------------------
+\subsection{Coordinate-Based HO-GSVD}
+
+In coordinate-based HO-GSVD we look for common temporal basis functions in
+\begin{equation}
+    X_i = U \Sigma_i V_i^\mathrm{H}\,,
+\end{equation}
+where $\left\{X_i\in\mathbb{C}^{m\times n_i}\right\}_{i=1}^N$ ($n_i>m$), $V_i\in\mathbb{C}^{n_i\times m}$ are unitary, $\Sigma_i\in\mathbb{R}^{m\times m}$ are diagonal, and $U\in\mathbb{C}^{m\times m}$ is a full rank matrix of unit vectors.
+Then, we can obtain the following Hermitian eigenvalue problem similar to the mode-based HO-GSVD
+\begin{equation}\label{gevProb2}
+    P_{ii}P_{jj}^{-1} u_k = \lambda^2_{ij,k} u_k \,,    
+\end{equation}
+or the following Hermitian generalized eigenvalue problem in terms of the adjoint basis of $u_i$
+\begin{equation}
+    P_{ii} z_k = \lambda^2_{ij,k} P_{jj} z_k \,,
+\end{equation}
+or in a matrix form
+\begin{equation}
+        P_{ii} Z = P_{jj} Z \Lambda^2_{ij} \,.
+\end{equation}
+Once we know $Z$, we can get $U = Z^{-\mathrm{H}}$.
+Since \eq{gevProb2} must be true for all $i$ and $j$, we sum \eq{gevProb2} over all $i$ and $j\ne i$ to get
+\begin{equation}
+     S u = \lambda u \,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+    S & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(P_{ii}P_{jj}^{-1}+P_{jj}P_{ii}^{-1}\right)\,,\\
+    \lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda_{ij}+\lambda_{ji}\right)\,.
+\end{aligned}    
+\end{equation}
+Then, after making all the columns in $U$ unitary, we can determine the other components by defining:
+\begin{equation}
+    M_i\triangleq\left[n_{i,1}, \cdots, n_{i,m} \right] = X_i^\mathrm{H} U^\mathrm{-H}\,,
+\end{equation}
+and by letting
+\begin{equation}
+    \Sigma_{i} = \mathrm{diag} \left(\norm{m_{i,k}}\right) \qquad \Rightarrow \qquad V_i =  M_i \Sigma_{i}^{-1}\,.
+\end{equation}
+
+Alternatively, we might want to obtain the conjugate modal coordinates directly.
+In that case, we instead consider the following eigenvalue problem:
+\begin{equation}
+     C z = \lambda z\,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+    C & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(P_{jj}^{-1}P_{ii}+P_{ii}^{-1}P_{jj}\right)\,,\\
+    \lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda^2_{ij}+\lambda^2_{ji}\right)\,.
+\end{aligned}    
+\end{equation}
+
+% ----------------------------------------------------------------
+\section{Decompositions Based on Non-Hermitian Cross-Covariances}
+
+The decompositions of a real-valued matrices based only on Hermitian autocovariances are also real-valued.
+This makes them ill-suited for physical systems that are characterized with a non-synchronous modal structures such as generally damped linear vibration problems and complex fluid flows.
+For these systems, we expect each dynamic mode to have not only the characteristic frequency but also the associated growth or decay rates, i.e., complex-valued modal structures.
+Decomposition based on non-Hermitian matrices generally yield complex characteristic values, which allows us to focus on complex-valued modal structures of the data.
+Even when we are decomposing the real-valued dynamical fields, they can have complex-valued temporal and spatial modes as long as modes come in complex-conjugate pairs.
+Specifically, for a set of data matrices $\{X_i\}_{i=1}^N$, we look at decomposition that use non-Hermitian cross-covariance matrices for $i\ne j$
+\begin{equation}
+    K_{ij} = X_i^\mathrm{H} X_j \quad \mathrm{or} \quad P_{ij} = X_i X_j^\mathrm{H}\,,
+\end{equation}
+where $(\cdot)^\mathrm{H}$ indicates Hermitian or conjugate transpose of $(\cdot)$, $X_i\in\mathbb{C}^{m_{i} \times n }$ and $m_i = m_j$ for $K_{ij}$, and $X_i\in \mathbb{C}^{m\times n_{i}}$ and $n_i = n_j$  for $P_{ij}$,
+When this condition is not met, we still have an option of truncating the longer data set to match the shorter one in size and obtain the needed cross-covariance.
+We can provide practical motivation for a specific decomposition by considering generally damped oscillations of mechanical systems.
+In particular, we will look at generally damped oscillations of lumped-parameter mechanical systems, where we expect to get asynchronous modes which are natural to describe by the complex-conjugate pairs of modes.
+
+%----------------------------------------------------------------
+\subsection{Vibration Modes of a Linear, Generally Damped, and Forced System}
+
+A lumped-parameter, generally damped, forced, and linear vibrations problem is usually stated as
+\begin{equation}
+    M\ddot q + C\dot q +K q = Q(t)\,,
+\end{equation}
+where $q\in \mathbb{R}^n$ is an $n$-deggree-of-freedom system's generalized configuration variable (usually describing generalized spatial coordinates), $M\in \mathbb{R}^{n\times n}$ is a positive definite usually symmetric mass matrix, $C \in \mathbb{R}^{n\times n}$ is the damping matrix that can have a symmetric part due to the viscous damping and skew-symmetric part due to the gyroscopic effects, $K \in \mathbb{R}^{n\times n}$ is a stiffness matrix which is usually symmetric.
+If $C$ matrix is the linear combination of $M$ and $K$ matrices, we say that we have a proportionally damped system and its modal structure is the same as for the undamped system (i.e., it is real-valued).
+Here, however, we look at generally damped systems, where the modes are no longer expected to be real.
+
+The modal analysis of generally damped oscillatory systems usually takes place in these systems' phase/state space in terms of the state variable $x=[q,\dot q]^\mathrm{T}\in \mathbb{R}^{2n}$.
+Then one of the possible realizations of the equations of motion are:
+\begin{equation}
+    \dot x = G x + F(t)\,,
+\end{equation}
+where
+\begin{equation}
+    G = \left[\begin{matrix}{}
+  0 & I \\
+  -M^{-1}K & -M^{-1}C 
+\end{matrix}\right] \qquad \mathrm{and} \qquad F(t) = \left[\begin{matrix}{}
+  0 \\
+  M^{-1}Q(t) 
+\end{matrix}\right]\,.
+\end{equation}
+
+
+% We assume that the response of an oscillatory distributed-parameter system $f(x,t)$ (with $x(t)\in\Omega\subset \mathbb{R}$ and $t\in T \subset \mathbb{R}$) can be written, using the separation of variables, as
+% \begin{equation}
+%    f(x,t) = \sum_{k=1}^{\infty} \xi_k(t) \phi_k(x)\,,
+% \end{equation}
+% where $\phi_i(x)$ are the mode shapes and $\xi_k(t)$ are the modal coordinates.
+
+For a discrete $n$-degree-of-freedom system, with $x(t)$ being a system's response, we can use separation of variables to write
+\begin{equation}
+    x(t) = \sum_{k=1}^{2n} \xi_k(t) \phi_k = \Phi \xi(t)\,,
+\end{equation}
+where $x(t) \in \mathbb{R}^{2n\times 1}$ is the state variable vector and $\Phi = [\phi_1,\cdots,\phi_{2n}]\in\mathbb{C}^{2n\times 2n}$ is a modal matrix containing the corresponding modal vectors or the eigenvectors of matrix $G$, and $\xi(t)$ is the vector of modal coordinates.
+Looking at the response sampled at $m$ discrete time intervals, we can write it in a matrix form as
+\begin{equation}\label{modal}
+    X = \Xi \Phi^\mathrm{H},
+\end{equation}
+where $X\in \mathbb{R}^{m\times 2n}$ and $\Xi=[\xi_1, \cdots, \xi_{2n}]\in\mathbb{C}^{m\times 2n}$ contains the modal coordinates or the modal response time series.
+In \eq{modal} neither modes shapes nor the modal coordinates are normalized in any way, except by the initial conditions.
+%To follow our convention and requiring both the mode shapes and the corresponding modal coordinates to be unit norm, or we introduce a modal contribution matrix 
+%\begin{equation}\label{modal}
+%    X = \Xi \Sigma \Phi^\mathrm{H},
+%\end{equation}
+%where now
+%\begin{equation}
+%    \norm{\xi_k \phi_k^\mathrm{H}} = 1
+%\end{equation}
+%and $\Sigma = \mathrm{diag}(\sigma_{i})\in\mathbb{C}^{n\times n}$ reflects individual modal contributions to the response.
+%It can be further decomposed into
+%\begin{equation}
+%    \Sigma = \Gamma \Theta\,,
+%\end{equation}
+%where $\Gamma \in \mathbb{R}^{n\times n}$ contains the magnitudes of the modes and $\Theta \in \mathbb{C}^{n\times n}$ with $\abs{\theta_i} = 1$ contains the phase information.
+
+For the undamped or proportionally damped oscillations of an $n$-degree-of-freedom system, we expect the mode shapes to be real-valued or synchronous, and the $n$-dimensional configuration space is sufficient to describe the system dynamics fully.
+For the generally damped oscillations, the mode shapes come in complex conjugate pairs in a $2n$-dimensional state space of the system.
+The modal response to a general external forcing function $F(t)$ and the initial condition $x(0)$ can be written using the convolution integral
+\begin{equation}
+	\xi(t) = e^{\Lambda t} \xi(0) + \int_0^\mathrm{T} e^{\Lambda(t-\tau)} \Psi^\mathrm{H} F(\tau) \mathrm{d} \tau\,,
+\end{equation}
+where $\Lambda$ is a diagonal matrix of the eigenvalues and $\Psi$ are the left (adjoint) eigenvectors of $G$ ($\Psi^\mathrm{H} = \Phi^{-1}$) .
+where $\xi(0) = \Psi^\mathrm{H} x(0)$, $\Psi = \Phi^{-\mathrm{H}}$ are conjugate modes, and the corresponding time derivative is given by
+\begin{equation}
+	\dot \xi(t) = \Lambda e^{\Lambda t} \xi(0) + \Lambda \int_0^\mathrm{T} e^{\Lambda(t-\tau)} \Psi^\mathrm{H} F(\tau) \mathrm{d} \tau = \Lambda \xi(t)\,,
+\end{equation}
+where $\Lambda = \mathrm{diag} \left( \lambda_j \right)\in \mathbb{R}^{2n\times 2n}$ is a diagonal matrix containing {\em characteristic values} $\lambda_{2k,2k-1}=-\gamma_k\pm i \omega_{d,k}$ (where $\gamma_k^{-1}$ are modal time constants and $\omega_{d,k}$ are damped natural frequencies).
+Therefore, the state variable response can be written as
+\begin{equation}
+	x(t) = \Phi \xi(t) = \Phi \left[ e^{\Lambda t}\Psi^\mathrm{H}x(0) + \int_0^\mathrm{T} e^{\Lambda(t-\tau)} \Psi^\mathrm{H} F(\tau) \mathrm{d} \tau\right] \,.
+\end{equation}
+Then, the time derivative of the state variable response can be written as
+\begin{equation}
+	\dot x(t) = \Phi \Lambda \left[ e^{\Lambda t}  \Psi^\mathrm{H}x(0) + \int_0^\mathrm{T} e^{\Lambda(t-\tau)}  \Psi^\mathrm{H} F(\tau) \mathrm{d} \tau\right]=\Phi\Lambda \xi(t) \,.
+\end{equation}
+where $\Lambda\in \mathbb{R}^{2n\times 2n}$ is a diagonal matrix containing $\lambda_{2k,2k-1}=-\gamma_k\pm i \omega_{d,k}$ (where $\gamma_k^{-1}$ are modal time constants and $\omega_{d,k}$ are damped natural frequencies).
+Therefore, in a matrix form, the response and its time derivative can be written as:
+\begin{equation}\label{dmodal}
+	X = \Xi \Phi^\mathrm{H} \quad \mathrm{and} \quad \dot X = \Xi \overline{\Lambda} 
+	\Phi^\mathrm{H}\,.
+\end{equation}
+%\begin{equation}\label{dmodal}
+%	\dot X = \dot \Xi \Sigma \Phi^\mathrm{H} = \Xi \Lambda \Sigma
+%	\Phi^\mathrm{H},
+%\end{equation}
+
+We have no a priori reason to assume that either modes in $\Phi$ or time coordinates in $\Xi$ are orthogonal or real-valued.
+Therefore, by definition, both SVD and GSVD impose unnecessary orthogonality conditions on the coordinates and/or modes which are also required to be real.
+It is better, just to work with expression in \eq{dmodal} directly and consider their temporal or spatial variations for identifying the corresponding modes and coordinates.
+
+These methodologies fall under the output-only or operational modal analysis.
+
+% ----------------------------------------------------------------
+\subsection{Characteristic Value Decomposition}
+
+Using the generally damped, lumped-parameter systems' response structure as an example, we are looking to decompose two data matrices (e.g., in \eq{dmodal} $X_1 = X$ and $X_2 = \dot X$) as 
+\begin{equation}
+	X_1 = U \Sigma_1 V^\mathrm{H} \quad \mathrm{and} \quad X_2 = U \Sigma_2 V^\mathrm{H}\,.
+\end{equation}
+For this pair of matrices we can look at covariance matrices
+\begin{equation}
+	K_{ij} = X_i^\mathrm{H}X_j \quad \mathrm{and} \quad P_{ij} = X_i X_j^\mathrm{H}\,,
+\end{equation}
+and consider the following generalized eigenvalue decompositions for $i\ne j$:
+\begin{equation}
+	K_{ij} \phi = \lambda K_{ii} \phi \quad \mathrm{and} \quad P_{ij} \xi = \lambda P_{ii} \xi\,.
+\end{equation}
+Now, just considering the matrix form of the first of the above equations
+\begin{equation}\label{Kijeq}
+	K_{ij} \Phi = K_{ii} \Phi\Lambda 
+\end{equation}
+and plugging in the decompositions, we get
+\begin{equation}
+	V\overline{\Sigma}_i U^\mathrm{H} U \Sigma_j V^\mathrm{H} \Phi = V\overline{\Sigma}_i U^\mathrm{H} U \Sigma_i V^\mathrm{H} \Phi \Lambda\,,
+\end{equation}
+or after eliminating the common factors from both sides of the equality,
+\begin{equation}
+	\Sigma_j V^\mathrm{H} \Phi = \Sigma_i V^\mathrm{H} \Phi \Lambda \quad \Rightarrow \quad \Sigma_i^{-1} \Sigma_j V^\mathrm{H} \Phi = V^\mathrm{H}\Phi \Lambda\,.
+\end{equation}
+Since, in the last matrix equation, $\Sigma_i^{-1} \Sigma_j$ and $\Lambda$ are diagonal, then $V^\mathrm{H} \Phi$ also has to be diagonal.
+Therefore, without the loss of generality, we can let $\Sigma_i^{-1} \Sigma_j = \Lambda$ and $V^\mathrm{H} \Phi = I$ by appropriately scaling the eigenvectors.
+Therefore, the solutions to the eigenvalue problem in \eq{Kijeq} provide mode shapes $\Phi = V^\mathrm{-H}$ and characteristic values $\Lambda = \Sigma_i^{-1} \Sigma_j$, which for the linear vibrations problem (i.e., $i =1$ and $j = 2$) give $\Sigma_i = I$ and $\Lambda = \Sigma_2$.
+
+Similarly, solving the other generalized eigenvalue problem to get
+\begin{equation}\label{Pijeq}
+	P_{ij} \Xi = P_{ii} \Xi\overline{\Lambda}                                                                                                                                                                   
+\end{equation}
+we find that $\Xi = U^{-\mathrm{H}}$ and $\Lambda = \Sigma_2$ for $i=1$ and $j=2$.
+While decompositions yielding real characteristic/singular values have a clear representation through generalized Rayleigh's quotient and linear programming based optimization, complex characteristic value decompositions lack such basis.
+Now we show that both state-variable and dynamic mode decompositions can be viewed as applications of the characteristic value decomposition.
+
+% ----------------------------------------------------------------
+\subsubsection{Example 1: State-Variable Decomposition for Modal Identification}
+
+{\em State-Variable Decomposition} (S-VD) was proposed to identify complex vibration modes, and the associated damping ratios and frequencies, of the state-variable model of a multi-degree-of-freedom linear system~\cite{feeny2008}. 
+In this approach, S-VD is accomplished by solving the following asymmetric generalized eigenvalue problem or its conjugate
+\begin{equation}\label{svdev}
+    K_{X\dot X} \tilde \psi_j = \tilde \lambda_{j} K_{XX} \tilde \psi_j\,
+\end{equation}
+ or its adjoint problem
+\begin{equation}\label{svdev2}
+    K_{\dot XX} \tilde \phi_j = \tilde \lambda_{j} K_{XX} \tilde \phi_j\,,
+\end{equation}
+where $K_{XX}$ is an autocovariance matrix of a free-vibration time series of state-variables in $X$, and $K_{\Dot XX}=K_{X\Dot X}^\mathrm{T}$ is the corresponding cross-covariance matrix between the time derivative $\dot X$ and $X$.
+Then, the complex vibration modes are approximated by the columns of $\tilde \Phi^T$ and the corresponding eigenvalues $\tilde \lambda$ approximate $-\zeta_{j}\omega_{j} \pm i\omega_{j}\sqrt{1-\zeta_{j}}$, where $\zeta_{j}$ and $\omega_{j}$ are the damping ratios and the natural frequencies of the $j$-the mode.
+This can be directly shown by plugging expressions \eq{dmodal} into \eq{svdev}:
+\begin{equation}
+    \Phi\Xi  
+    ^\mathrm{H} \Xi \Lambda \Phi^\mathrm{H} \tilde \psi_j
+ = \tilde \lambda_{j}\Phi\Xi^\textrm{H}\Xi
+    \Phi^\textrm{H} \tilde \psi_j\,, 
+\end{equation}
+which reduces to
+\begin{equation}
+    \Lambda \Phi^\mathrm{H} \tilde \psi_j
+ = \tilde \lambda_{j}
+    \Phi^\textrm{H} \tilde \psi_j\,, 
+\end{equation}
+or in a matrix form
+\begin{equation}
+    \Lambda \Phi^\mathrm{H} \tilde \Psi
+ = \Phi^\textrm{H} \tilde \Psi \tilde \Lambda \,.
+\end{equation}
+Now, since both $\Lambda$ and $\tilde \Lambda$ are diagonal, then $\Phi^\mathrm{H} \tilde \Psi$ also needs to be diagonal and real.
+In addition, we also need $\tilde\Lambda = \Lambda$.
+Therefore, we can scale modes such that $\Phi^\mathrm{H} \tilde \Psi = I$ and since $\Phi^{-H} = \Psi$, thus $\tilde \Psi=\Psi$.
+% Both SOD and S-VD, when applied to the free-vibrations of a linear multi-degree-of-freedom system, give the same modes for the undamped or proportionally-damped systems.
+
+% ----------------------------------------------------------------
+\subsubsection{Example 2: Dynamic Mode Decomposition}
+{\em Dynamic mode decomposition} (DMD) works with snapshots of the fluid-flow vector field $X_1=[x_1,x_2,\cdots, x_{m}]\in\mathbb{C}^{n\times m}$ and its image one-time-step later $X_2=[x_2,x_3,\cdots, x_{m+1}]\in\mathbb{C}^{n\times m}$ to identify a best linear mapping between them
+\begin{equation}\label{DMDeq0}
+    X_2 = A X_1\,,
+\end{equation}
+where spatial information is in columns and temporal information is in rows.
+DMD aims to identify the proxy to a generally nonlinear dynamical system
+\begin{equation}
+    \dot x = f(x,t)
+\end{equation} 
+by finding the approximate locally linear dynamical system
+\begin{equation}
+    \dot x = Gx
+\end{equation}
+similar to the one for the damped linear vibrations.
+Then the solution to this approximate equation can be written as
+\begin{equation}\label{DMDev}
+    x_i = x(t_i) = \Phi e^{\Lambda t_i} \xi_0\,,
+\end{equation}
+where $\Phi\in\mathbb{C}^{n\times r}$ and $\Lambda = \mathrm{diag}({\lambda_{i}})\in \mathbb{C}^{r\times r}$ are the $r$ dominant eigenvectors and eigenvalues of the matrix $G$ and $\xi_0$ contains the initial amplitudes of each mode or $\Phi \xi_0 = x_1$.
+Therefore, we can write that
+\begin{equation}\label{xp1}
+    x_{i+1} = \Phi e^{\Lambda t_{i+1}} \xi_0 = \Phi e^{\Lambda (t_{i}+\Delta t)} \xi_0 = \Phi e^{\Lambda \Delta t}e^{\Lambda t_{i}} \xi_0 = \Phi \Omega e^{\Lambda t_{i}}\xi_0\,,
+\end{equation}
+where $\Omega = e^{\Lambda \Delta t}$.
+Thus, we can also write
+\begin{equation}
+    x_{i+1} = \Phi \Omega \Phi^{-1} \Phi e^{\Lambda t_{i}}\xi_0 = \Phi \Omega \Phi^{-1} x_{i} = A x_i\,,
+\end{equation}
+where
+\begin{equation}
+    A = \Phi \Omega \Phi^{-1}
+\end{equation}
+provides the eigendecomposition to matrix $A$ with eigenvectors $\phi_i$ and the corresponding eigenvalues $\omega_i = e^{\lambda_i \Delta t}$.
+Therefore, in DMD, the basic assumption is that 
+\begin{equation}
+    X_1 = \Phi \Xi
+\end{equation}
+Then considering \eq{xp1} we can also write
+\begin{equation}
+    X_2 = \Phi \Omega \Xi
+\end{equation}
+Plugging this back into \eq{DMDeq0} gives
+\begin{equation}
+    \Phi \Omega \Xi = A \Phi \Xi\,,
+\end{equation}
+which results into
+\begin{equation}
+     A \Phi=\Phi \Omega\,,
+\end{equation}
+which is the eigendecomposition of $A$ stemming from the corresponding eigenvalue problem
+\begin{equation}
+    A \phi_i = \omega_i \phi_i\,.
+\end{equation}
+Therefore, to find the dynamical modes, we need to find the eigenvalues of $A$.
+
+In DMD scenarios, it is common to have $n\gg m$ and usual pseudo-inverse based least-squares solution to finding the matrix $A$
+\begin{equation}
+    A = X_2 X_1^\dag,
+\end{equation}
+where $X_1^\dag = X_1^\mathrm{H} (X_1 X_1^\mathrm{H})^{-1}$, is not possible since the rank of the matrix $X_1$ is at most $m$.
+Therefore, we have to look for a regularized solution to find the eigenvectors of the $A$ matrix.
+The standard approach is to use the $r$-rank TSVD of the matrix $X_1$
+\begin{equation}
+    X_1 \approx \tilde U\tilde \Sigma \tilde V^\mathrm{H}\quad \Rightarrow \quad A \approx X_2  \tilde V \tilde \Sigma^{-1}\tilde U^\mathrm{H}\,,
+\end{equation}
+where $r\le \min\left(\mathrm{rank}(X_1),m\right)$, to get an $(r\times r)$-dimensional similar matrix to $A$
+\begin{equation}
+    \tilde A = \tilde U^\mathrm{H} A \tilde U = \tilde U^\mathrm{H} X_2  \tilde V \tilde \Sigma^{-1} \,.
+\end{equation}
+Then using the eigendecomposition of $\tilde A$,
+\begin{equation}
+    \tilde A W = W \Omega\,,
+\end{equation}
+one can reconstruct the needed DMD modes as
+\begin{equation}
+    \Phi = X_2 \tilde V \tilde \Sigma^{-1} W \Omega^{-1}\,.
+\end{equation}
+
+We advocate the alternative approach based on GSVD of the matrix pair $X_1$ and $X_2$.
+Using \eq{DMDev} we can write
+\begin{equation}
+    X_1 = \Phi \Xi_1^\mathrm{H}\,,
+\end{equation}
+where the matrix $\Xi_1$ contains time coordinates
+\begin{equation}
+    \Xi_1^\mathrm{H} = \left[ e^{\Lambda t_1} \xi_0, e^{\Lambda t_2} \xi_0, \cdots , e^{\Lambda t_m} \xi_0\right]\,.
+\end{equation}
+We can also write that
+\begin{equation}
+    X_2 = \Phi \Xi_2^\mathrm{H}\,,
+\end{equation}
+where 
+\begin{equation}
+\begin{aligned}
+    \Xi_2^\mathrm{H} &= \left[ e^{\Lambda t_2} \xi_0, e^{\Lambda t_3} \xi_0, \cdots , e^{\Lambda t_{m+1}} \xi_0\right]\\ &= \left[ e^{\Lambda (t_1+\Delta t)} \xi_0, e^{\Lambda (t_2+\Delta t)} \xi_0, \cdots , e^{\Lambda (t_m+\Delta t)} \xi_0\right]\\
+    &= e^{\Lambda \Delta t}\left[ e^{\Lambda t_1} \xi_0, e^{\Lambda \Delta t} \xi_0, \cdots , e^{\Lambda t_m} \xi_0\right]=e^{\Lambda \Delta t}\Xi_1^\mathrm{H}\,.
+\end{aligned}
+\end{equation}
+Therefore, we get that 
+\begin{equation}
+    X_2 = \Phi e^{\Lambda \Delta t} \Xi_1^\mathrm{H}\,.
+\end{equation}
+%Now, we can use the $r$-rank trancated GSVD of the matrix pair $X_1$ and $X_2$ 
+%\begin{equation}
+%    X_1^\mathrm{H} \approx \tilde U_1 \tilde \Sigma_{11} \tilde V^\mathrm{H} \quad \mathrm{and}\quad X_2^\mathrm{H} \approx \tilde U_2 \tilde \Sigma_{2} \tilde V^\mathrm{H}
+%\end{equation}
+%to get
+%\begin{equation}
+%    A^\mathrm{H} \approx \tilde V \tilde \Sigma_{11}^{-1} \tilde U_1^\mathrm{H} \tilde U_2 \tilde \Sigma_{2} \tilde V^\mathrm{H}
+%\end{equation}
+%\begin{equation}
+%    A \approx \tilde V \tilde \Sigma_{2}^* \tilde U_2^\mathrm{H} \tilde U_1 \tilde \Sigma_{11}^{-*} \tilde V^\mathrm{H}
+%\end{equation}
+%to obtain an $r\times r$ projection of matrix A and its eigendecomposition
+%\begin{equation}
+%    \tilde A = \tilde \Sigma_{2}^* \tilde U_2^\mathrm{H}\tilde U_1\tilde \Sigma_{11}^{-*} = W\Lambda W^{-1} = \Phi \Lambda \Phi^{-1}\,.
+%\end{equation}
+%Then
+%\begin{equation}
+%    A \approx \tilde V  W\Lambda W^{-1} \tilde V^\mathrm{H} \,.
+%\end{equation}
+%Finally, we can obtain the corresponding DMD modes
+%\begin{equation}
+%    \Phi \approx \tilde V W\,. 
+%\end{equation}
+
+Now, we can use the $r$-rank trancated GSVD of the matrix pair $X_1$ and $X_2$ 
+\begin{equation}
+    X_1 \approx \tilde U_1 \tilde \Sigma_{1} \tilde V^\mathrm{H} \quad \mathrm{and}\quad X_2 \approx \tilde U_2 \tilde \Sigma_{2} \tilde V^\mathrm{H}
+\end{equation}
+to approximate $A$ as
+\begin{equation}
+    A \approx \tilde U_2 \tilde \Sigma_{2} \tilde \Sigma_{1}^{-1} \tilde U_1^\mathrm{H}
+\end{equation}
+and use it to obtain an $(r\times r)$-dimensional matrix similar to A and the corresponding eigendecomposition
+\begin{equation}
+    \tilde A_{1} = \tilde U_1^\mathrm{H} A \tilde U_1= \tilde U_1^\mathrm{H} U_2 \tilde \Sigma_{2} \tilde \Sigma_{1}^{-1}  = W_1 \Omega W_1^{-1}\,.
+\end{equation}
+Then
+\begin{equation}
+    A \tilde U_1 W_1 = \tilde U_1  W_1\Omega
+\end{equation}
+and, thus,  the corresponding DMD modes are
+\begin{equation}
+    \Phi \approx \tilde U_1 W_1\,. 
+\end{equation}
+
+We can also get another $(r\times r)$-dimensional matrix similar to $A$ and the corresponding eigendecomposition
+\begin{equation}
+    \tilde A_{2} = \tilde U_2^\mathrm{H} A \tilde U_2=  \tilde \Sigma_{2} \tilde \Sigma_{1}^{-1} \tilde U_1^\mathrm{H} \tilde U_2  = W_2 \Omega W_2^{-1}\,.
+\end{equation}
+Then 
+\begin{equation}
+    A \tilde U_2 W_2 = \tilde U_2  W_2\Omega
+\end{equation}
+and the corresponding DMD modes are
+\begin{equation}
+    \Phi \approx \tilde U_2 W_2\,. 
+\end{equation}
+Finally, we can take the arithmetic mean to get a better estimates of the DMD modes
+\begin{equation}
+    \Phi = \frac{1}{2}\left(\tilde U_1 W_1+\tilde U_2 W_2\right)\,. 
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsection{Generalized Characteristic Value Decomposition}
+
+In many practical situations, we are looking for the decomposition of a pair of two matrices that have both common spatial and temporal basis vectors:
+\begin{equation}
+	X_1 = U \Sigma_1 V^\mathrm{H} \quad \mathrm{and} \quad X_2 = U \Sigma_2 V^\mathrm{H}\,.
+\end{equation}
+For this pair of matrices we can look at covariances
+\begin{equation}
+	K_{ij} = X_i^\mathrm{H}X_j \quad \mathrm{and} \quad P_{ij} = X_i X_j^\mathrm{H}\,,
+\end{equation}
+then we consider the following square matrix for $i\ne j$ and for $k = 1,2$:
+\begin{equation}
+\begin{aligned}
+	K_{ik}K_{jk}^{-1} &= \left( V \overline{\Sigma}_i U^\mathrm{H} U \Sigma_k V^\mathrm{H}\right)    \left(V \overline{\Sigma}_j U^\mathrm{H} U \Sigma_k V^\mathrm{H} \right)^{-1}\\
+	&= V \overline{\Sigma}_i \left( U^\mathrm{H}  U \right) \Sigma_k V^\mathrm{H} V^{-\mathrm{H}} \Sigma_k^{-1} \left(U^\mathrm{H} U \right)^{-1} \overline{\Sigma}_j^{-1} V^{-1}\\ &= V \overline{\Sigma}_i \overline{\Sigma}_j^{-1} V^{-1}\,.
+\end{aligned}
+\end{equation}
+%and similarly
+%\begin{equation}
+%	K_{2k}K_{1k}^{-1} = V \overline{\Sigma}_2 \overline{\Sigma}_1^{-1} V^{-1}\,.
+%\end{equation}
+Thus, if we define the following matrix
+\begin{equation}
+	S = \frac{1}{4}\sum_{i=1}^2 \sum_{\footnotesize \begin{array}{c} j=1\\j\ne i
+	\end{array}}^2\sum_{k=1}^2 K_{ik}K_{jk}^{-1}\,,
+\end{equation}
+then, its eigendecomposition is given by
+\begin{equation}
+	S = V \Lambda V^{-1}\,,
+\end{equation}
+where 
+\begin{equation}
+	\Lambda = \frac{1}{2}\left( \overline{\Sigma}_1 \overline{\Sigma}_2^{-1} + \overline{\Sigma}_2 \overline{\Sigma}_1^{-1} \right)\,.
+\end{equation}
+
+Once the modes $V$ are determined and normalized, we can get the rest of the components for $i = 1,2$ as
+\begin{equation}
+	M_i \triangleq\left[m_{i,1}, \cdots, m_{i,m} \right] = X_i V^{-\mathrm{H}} \qquad \Rightarrow \qquad U =  M_1 \Sigma_{1}^{-1} =  M_2 \Sigma_{2}^{-1}\,,
+\end{equation}
+end finally, if we let $\Sigma_1$ be real-valued,
+\begin{equation}
+\Sigma_1 = \mathrm{diag}\left(\norm{m_{1,k}}\right)\,, \quad \Rightarrow \quad U =  M_1 \Sigma_{1}^{-1}  \quad \Rightarrow \quad \Sigma_2 = \Sigma_1 M_1^{\dag} M_2 = \Sigma_1 V^\mathrm{H} X_1^{\dag} X_2 V^\mathrm{-H}\,,
+\end{equation}
+where $\Sigma_2$ is generally complex-valued and contains the information both about the modal magnitudes in $X_2$ and their phase differences with the modes in $X_1$.
+
+% ----------------------------------------------------------------
+\subsection{Higher-Order Generalized Characteristic Value Decomposition}
+
+Decompositions that also consider multiple non-Hemitian cross-covariances and will be called {\em Higher-order Generalized Characteristic Value decomposition} (HO-GCVD) and generally yield complex characteristic values.
+
+From the above examples, we expect HO-GCVD to give us the same temporal and spatial basis for all data matrices of the same size
+\begin{equation}
+    X_i=\Xi \Sigma_i\Phi^\mathrm{H}\,,
+\end{equation}
+where
+\begin{equation}
+    \Sigma_i = e^{i \Lambda \Delta t}
+\end{equation}
+in case of DMD ($i$ in this case represents the discrete time delay between the data sets), or
+\begin{equation}
+    \Sigma_i = \Lambda^i
+\end{equation}
+in case of asymmetric state-variable decomposition (now $i$ indicates the order of time derivatie).
+Similar to HO-GSVD, HO-GCVD can be done by either first solving for the spacial modes or temporal coordinates.
+
+In practical applications, we may not have all the data matrices of the same size.
+For example, we could have data sets collected at different time instants having a different number of time samples or if we take discrete-time derivatives of the data, then the number of time samples can also decrease.
+Therefore, if the location and number of sensors is fixed, we expect to have $\left\{X_i\in\mathbb{C}^{m_i\times n}\right\}_{i=1}^N$, where $m_i$ can vary with $i$.
+In this case, we first look for the common spatial modal basis in the data and then find the corresponding coordinates.
+
+On the other hand, there may be a situation where we have a fixed number of time samples in each data record, but the measurement points or the number of active/useful sensors changes.
+Then we expect our data records to have a form of  $\left\{X_i\in\mathbb{C}^{m\times n_i}\right\}_{i=1}^N$, where $n_i$ can vary with $i$.
+Now, we first look for the common temporal coordinate basis in the data and then find the corresponding spatial modes.
+% ----------------------------------------------------------------
+\subsubsection{Mode-Based HO-GNHD}
+
+Mode-Based HO-GCVD considers a set of matrices $\left\{X_i\in\mathbb{C}^{m_i\times n}\right\}_{i=1}^N$ (where $m_1 = \max(m_i)$ with all $m_i > n$) and decomposes them into
+\begin{equation}\label{HONHD1}
+    X_i = \Xi_i \Phi^\mathrm{H}\,,
+\end{equation}
+where $\Phi=[\phi_1,\phi_2,\cdots,\phi_n]\in\mathbb{C}^{n\times n}$ are right basis vectors or mode shapes, $\Xi_i=[\xi_{1i},\xi_{2i},\cdots,\xi_{ni}]\in\mathbb{C}^{m_i \times n}$ the corresponding time coordinates for each data matrix.
+For HO-GCVD we consider non-Hermitian cross-covariance matrices for $i\ne k$ 
+\begin{equation}
+    K_{ik} = X_i^\mathrm{H} X_k\,.
+\end{equation}
+However, if $m_k \ne m_i$, we cannot do this calculation directly.
+Therefore, we let $m_{ik} = \min\left(m_i,m_k\right)$ and truncate each data matrix in the pair to the same number of $m_{ik}$ rows to get $\hat X_i \in \mathbb{C}^{m_{ik}\times n}$ and $\hat X_k \in \mathbb{C}^{m_{ik}\times n}$ and obtain
+\begin{equation}
+    K_{ik} = \hat X_i^\mathrm{H} \hat X_k = \Phi \hat \Xi_i^\mathrm{H}  \hat \Xi_k \Phi^\mathrm{H}\,.
+\end{equation}
+Considering our observation in DMD and S-VD problems described above,  the basic assumption HO-GCVD is stated as
+\begin{equation}
+    \hat \Xi_i = \hat \Xi \Sigma_i\,,
+\end{equation}
+where $\Sigma_i\in \mathbb{C}^{n\times n}$ is a diagonal matrix of some characteristic values and $\Xi$ represents some reference time coordinates.
+Now, assuming each of the cross-covariances has full rank, we derive the following expression
+\begin{equation}
+\begin{aligned}
+    K_{ik} K_{jk}^{-1} &=  \Phi \hat \Xi_i^\mathrm{H}  \hat \Xi_k \Phi^\mathrm{H}
+    \left(\Phi \hat \Xi_j^\mathrm{H}  \hat \Xi_k \Phi^\mathrm{H}\right)^{-1}\\
+    &=  \Phi \left(\hat \Xi_i^\mathrm{H}  \hat \Xi_k \right) \left(\hat \Xi_j^\mathrm{H}  \hat \Xi_k \right)^{-1} \Phi^{-1}\\ 
+    &=  \Phi \overline \Sigma_i \left(\hat \Xi^\mathrm{H}  \hat \Xi \right) \Sigma_k \Sigma_k^{-1} \left(\hat \Xi^\mathrm{H}  \hat \Xi \right)^{-1} \overline \Sigma_j^{-1} \Phi^{-1}\\
+    &=  \Phi \overline \Sigma_i \overline \Sigma_j^{-1} \Phi^{-1}\,.
+\end{aligned}
+\end{equation}
+
+Therefore
+\begin{equation}\label{kkk}
+    K_{ik} K_{jk}^{-1} = \Phi \Lambda_{ij} \Phi^{-1}\,,
+\end{equation}
+where
+\begin{equation}\label{Lij}
+    \Lambda_{ij} = \overline \Sigma_i \overline \Sigma_j^{-1}\,.
+\end{equation}
+
+This \eq{kkk} can also be written as the equivalent non-Hermitian eigenvalue problem
+\begin{equation}\label{kikkjk}
+    K_{ik} K_{jk}^{-1} \phi = \lambda_{ij} \phi\,,
+\end{equation}
+or the corresponding non-Hermitian generalized eigenvalue problem in terms of the adjoint eigenvectors
+\begin{equation}
+    K_{ki}\psi = \lambda_{ij} K_{kj} \psi \,,
+\end{equation}
+which gives the corresponding adjoint eigenvalue problem:
+\begin{equation}
+    K_{kj}^{-1} K_{ki}\psi = \lambda_{ij} \psi \,.
+\end{equation}
+
+We can generalize \eq{kikkjk} even further if we sum over all $i$, $j\ne i$, and $k$ to get the following eigenvalue problem
+\begin{equation}
+     S \phi = \lambda \phi\,,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+    S & = \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N\sum_{k=1}^N \left(K_{jk}K_{ik}^{-1}+K_{ik}K_{jk}^{-1}\right)\,,\\
+    \lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda_{ij}+\lambda_{ji}\right)\,.
+\end{aligned}    
+\end{equation}
+
+To find the other components of the decomposition, we make the columns $\phi_i$ in $\Phi$ unit norm and the corresponding conjugate modes:
+\begin{equation}
+    \Psi = \Phi^{-\mathrm{H}}\,.
+\end{equation}
+Then, we can find the corresponding time coordinates as
+\begin{equation}\label{Meq0}
+    \Xi_i\triangleq\left[\xi_{i,1}, \cdots, \xi _{i,n} \right] = X_i \Psi\,.
+\end{equation}
+Now, without the loss of generality we can let
+\begin{equation}
+    \Sigma_1 = I \quad \Rightarrow \quad \Xi_1 = \Xi\,.
+\end{equation}
+Then, for $i>1$, we can write 
+\begin{equation}
+    \Sigma_i = \mathrm{diag}(\sigma_{i,k})
+    = \hat \Xi^\dag \hat \Xi_i\,,
+\end{equation}
+where hat again indicate the truncation of the number of rows to $m_{1i}$ and $\hat \Xi^\dag = (\Xi^\mathrm{H} \Xi)^{-1}\hat \Xi^\mathrm{H}$ is the pseudo-inverse of $\hat \Xi$.
+When viewed from this perspective, we see that $\Sigma_i$ contain the information about the phase and magnitude change in the modal coordinates of $\Xi_i$ with respect to the reference coordinates $\Xi_1=\Xi$.
+
+Alternatively, we can focus on the conjugate modes if we consider
+\begin{equation}
+     C \psi = \lambda \psi\,,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+    C & = \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N\sum_{k=1}^N \left(K_{kj}^{-1}K_{ki}+K_{ki}^{-1}K_{kj}\right)\,,\\
+    \lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda_{ij}+\lambda_{ji}\right)\,.
+\end{aligned}    
+\end{equation}
+
+
+% ----------------------------------------------------------------
+\subsubsection{Underdetermined Mode-Based HO-GCVD}
+
+To deal with undetermined decomposition problem, we need to identify a subspace where decomposition can be uniquely determined.
+We start by constructing a combined data matrix containing all the unique row vectors in the data set and determining its $r$-dimensional TSVD to reduce all matrices $X_i$ to full rank
+\begin{equation}
+    X = \bigcup \left\{X_1; X_2; \cdots; X_N\right\}
+    = \tilde U \tilde \Sigma \tilde Q^\mathrm{H}\,,
+\end{equation}
+where $r \le \min\left(n, \left\{\mathrm{rank}(X_i)\right\}\right)$ and $\tilde Q\in\mathbb{C}^{n\times r}$.
+Now, we project the data matrices down to $r$-dimensional subspace
+\begin{equation}
+    \tilde X_i = X_i \tilde Q = \Xi_i \Phi^\mathrm{H}  \tilde Q =\Xi_i \tilde \Phi^\mathrm{H}\,,
+\end{equation}
+where $\tilde \Phi= \tilde Q^\mathrm{H} \Phi$ and we can define the new $(r\times r)$-dimensional cross-covariance matrices
+\begin{equation}
+    \tilde K_{ij} \triangleq \tilde Q^\mathrm{H} \hat X_i^\mathrm{H} \hat X_i \tilde Q = \tilde \Phi \hat \Xi_i^\mathrm{H}\hat \Xi_j  \tilde \Phi^\mathrm{H}
+\end{equation}
+and the corresponding $(r\times r)$-dimensional cumulative cross-covariance matrix
+\begin{equation}
+    \tilde S \triangleq \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \sum_{k=1}^N \left(\tilde K_{ik} \tilde K_{jk}^{-1} + \tilde K_{jk} \tilde K_{ik}^{-1}\right)\,.
+\end{equation}
+The eigendecomposition of $\tilde S$
+\begin{equation}
+    \tilde S = \tilde \Phi \Lambda \tilde \Phi^{-1}
+\end{equation}
+allows us to determine $r$ $n$-dimensional modes
+\begin{equation}
+    \Phi = \tilde Q \tilde \Phi\,.
+\end{equation}
+Once $\Phi$ is known and normalized, we can also determine its inverse as
+\begin{equation}
+    \Psi = \tilde \Phi^{-1}\tilde Q^\mathrm{H}
+\end{equation}
+and find the remaining components the same way as for the overdetermined case.
+
+
+% ----------------------------------------------------------------
+\subsubsection{Coordinate-Based HO-GCVD}
+
+In cases when we have $\left\{X_i\in\mathbb{C}^{m\times n_i}\right\}_{i=1}^N$ ($n_1 = \max(n_i)$ with $m<n_i$), we consider the following decompositions
+\begin{equation}
+    X_i = \Xi \Phi_i^\mathrm{H}\,,
+\end{equation}
+where $\Phi_i\in\mathbb{C}^{n_i\times m}$ and $\Xi\in\mathbb{C}^{m\times m}$.
+Now, for each pair of $X_i$ and $X_k$ data records, we define $n_{ik} = \min\left(n_i,n_k\right)$, and truncate them to the same number of $n_{ik}$ columns $\hat X_i \in \mathbb{C}^{m\times n_{ik}}$ and $\hat X_k \in \mathbb{C}^{m\times n_{ik}}$, to get the spatial covariances
+\begin{equation}
+    P_{ik} = \hat X_i \hat X_k^\mathrm{H} = \Xi \hat \Phi_i^\mathrm{H} \hat \Phi_k \Xi^\mathrm{H}\,.
+\end{equation}
+We can do similar derivation to mode-based decomposition to get the equivalent non-Hermitian eigenvalue problem
+\begin{equation}
+     P_{ik} P_{jk}^{-1}  \xi = \lambda_{ij} \xi \,,
+\end{equation}
+or non-Hermitian generalized eigenvalue problem in terms of adjoint basis
+\begin{equation}
+    P_{ik} z = \lambda_{ij} P_{jk} z \,.    
+\end{equation}
+We can generalize them even further, if we can sum over all $i$, $j\ne i$, and $k$ to get
+\begin{equation}
+     S \xi = \lambda \xi \,,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+    S & = \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N\sum_{k=1}^N \left(P_{ik}P_{jk}^{-1} + P_{jk}P_{ik}^{-1}\right)\,,\\
+    \lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda_{ij}+\lambda_{ji}\right)\,.
+\end{aligned}    
+\end{equation}
+
+To find other components of the decomposition, we make the columns $\xi_i$ in $\Xi$ unit norm.
+Then, we can determine the other components by defining:
+\begin{equation}\label{Meq}
+    \Phi_i\triangleq\left[\phi_{i,1}, \cdots, \phi_{i,m} \right] = X_i^{\mathrm{H}}\Xi^{-\mathrm{H}}  \,.
+\end{equation}
+Now, without the loss of generality we can let
+\begin{equation}
+    \Sigma_1 = I \quad \Rightarrow \quad \Phi_1 = \Phi\,.
+\end{equation}
+Then, for $i>1$, we can write 
+\begin{equation}
+    \Sigma_i = \mathrm{diag}(\sigma_{i,k})
+    = \hat \Phi^\dag \hat \Phi_i\,,
+\end{equation}
+where hat again indicate the truncation of the number of rows to $n_{1i}$ and $\hat \Phi^\dag = (\Phi^\mathrm{H} \Phi)^{-1}\hat \Phi^\mathrm{H}$ is the pseudo-inverse of $\hat \Phi$.
+When viewed from this perspective, we see that $\Sigma_i$ contain the information about the phase and magnitude change in the mode shapes of $\Phi_i$ with respect to the reference modes $\Phi_1=\Phi$.
+
+
+Alternatively, we can directly get the conjugate coordinates using
+\begin{equation}
+     C z = \lambda z \,,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+    C & = \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N\sum_{k=1}^N \left(P_{kj}^{-1}P_{ki}+P_{ki}^{-1}P_{kj}\right)\,,\\
+    \lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda_{ij}+\lambda_{ji}\right)\,.
+\end{aligned}    
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsubsection{Underdetermined Coordinate-Based HO-GCVD}
+
+We start by constructing a combined data matrix containing all the unique {\em column} vectors in the data set and determining its $r$-dimensional TSVD to reduce all matrices $X_i$ to full rank 
+% We start by constructing a combined data matrix and determining its $r$-dimensional TSVD to reduce all matrices $X_i$ to full rank
+\begin{equation}
+    X = \bigcup \left\{X_1, X_2, \cdots, X_N\right\}
+    = \tilde Q \tilde \Sigma \tilde V^\mathrm{H}\,,
+\end{equation}
+where $r \le \min\left(m, \left\{\mathrm{rank}(X_i)\right\}\right)$ and $\tilde Q\in\mathbb{C}^{m\times r}$.
+Now, we project the data matrices down to $r$-dimensional subspace
+\begin{equation}
+    \tilde X_i = \tilde Q^\mathrm{H} X_i = \tilde \Xi \Phi_i^\mathrm{H}
+\end{equation}
+and define the new $(r\times r)$-dimensional cross-covariance matrices
+\begin{equation}
+    \tilde K_{ij} \triangleq \tilde Q X_i X_i^\mathrm{H}\tilde Q^\mathrm{H} = \tilde \Xi \hat \Phi_i^\mathrm{H}\hat \Phi_j \tilde \Xi^\mathrm{H}
+\end{equation}
+and the corresponding $(r\times r)$-dimensional cumulative cross-covariance matrix:
+\begin{equation}
+    \tilde S \triangleq \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \sum_{k=1}^N \left(\tilde K_{ik} \tilde K_{jk}^{-1} +\tilde K_{jk} \tilde K_{ik}^{-1}\right)\,.
+\end{equation}
+Now, we can determine the eigen-decomposition of $\tilde S$
+\begin{equation}
+    \tilde S = \tilde \Xi \Omega \tilde \Xi^{-1}
+\end{equation}
+to find the $m$-dimensional coordinates
+\begin{equation}
+    \Xi = \tilde Q \tilde \Xi\,.
+\end{equation}
+Once $U$ is known, we can also determine it inverse as
+\begin{equation}
+    \Xi^{-1}=\tilde \Xi^{-1}\tilde Q^\mathrm{H}
+\end{equation}
+and find the remaining components the same way as for the overdetermined case.
+
+% ----------------------------------------------------------------
+\subsubsection{HO-GCVD for Mode-Based Modal Identification}
+
+If we focus on temporal variations, then we can consider time derivatives of our response matrix
+\begin{equation}
+    {\cal D}^k X = {\cal D}^k \Xi \Phi^\mathrm{H} = \Xi \Lambda^k \Phi^\mathrm{H}\,,
+\end{equation}
+where $\Lambda=\mathrm{diag}\left( \lambda_k \right)$ is the diagonal matrix of characteristic numbers ($\lambda_{2k-1,2k}=-\gamma_k\mp i\omega_k$).
+Now, we can define the corresponding cross-covariance matrices
+\begin{equation}
+    K_{kl} = \left({\cal D}^k X\right)^\mathrm{H} {\cal D}^l X = \Phi \left(\Xi \Lambda^k\right)^\mathrm{H} \Xi \Lambda^l\Phi^\mathrm{H}=\Phi \bar \Lambda^k \Xi^\mathrm{H}\Xi\Lambda^l\Phi^\mathrm{H}\,,
+\end{equation}
+and considering the following
+\begin{equation}
+\begin{aligned}
+    S_{ij} &\triangleq \frac{1}{N}\sum_{k=1}^N K_{ik}K_{jk}^{-1}\\ 
+    &= \Phi \left(\frac{1}{N}\sum_{k=1}^N \bar \Lambda^i \left( \Xi^\mathrm{H}\Xi\Lambda^k\Phi^\mathrm{H}\right)
+    \left( \Xi^\mathrm{H}\Xi\Lambda^k\Phi^\mathrm{H}\right)^{-1}\bar \Lambda^{-j}\right) \Phi^{-1}\\
+    &
+    = \Phi \left(\frac{1}{N}\sum_{k=1}^N  \bar \Lambda^{i-j} \right) \Phi^{-1} = \Phi \bar \Lambda^{i-j} \Phi^{-1}\,.
+\end{aligned}
+\end{equation}
+%Please note that when we only consider Hermitian autocovariance matrices 
+%\begin{equation}
+%    S_{ii} = \Phi \bar \Lambda^{i-i} \Phi^{-1}    = I \,.
+%\end{equation}
+
+Now, we can define a final cumulative generalized cross-covariance matrix as
+\begin{equation}
+\begin{aligned}
+    S &= \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(S_{ij} + S_{ji}\right)\\
+    &= \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \sum_{k=1}^N \left(K_{ik} K_{jk}^{-1} + K_{jk} K_{ik}^{-1}\right)\,,
+\end{aligned}
+\end{equation}
+to get its eigenvalue decomposition
+\begin{equation}
+    S \Phi = \Phi \check \Lambda \,,
+\end{equation}
+where
+\begin{equation}
+        \check  \Lambda = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\bar \Lambda^{i-j} + \bar \Lambda^{j-i} \right)
+\end{equation}
+is a diagonal matrix of eigenvalue of $S$.
+
+By solving the eigenvalue problem for the cumulative cross-covariance matrix $S$, we get the eigenvectors in $\Phi$, which are the actual mode shapes of the problem.
+Then, we can get the corresponding adjoint eigenvectors, time coordinates, and the characteristic values as:
+%\begin{equation}
+%    \Psi = \Phi^{-H},\quad \Xi = X \Psi, \quad \mathrm{and} \quad \Lambda^* = \Phi^{-1}\left[\frac{1}{2(N-1)}\sum_{k=1}^{N-1} \left(S_{k+1,k}+S_{k,k+1}^{-1}\right)\right] \Phi\,.
+%\end{equation}
+\begin{equation}
+    \Psi = \Phi^{-H},\quad \Xi = X \Psi, \quad \mathrm{and} \quad \bar \Lambda = \Phi^{-1}\left[\frac{1}{N(N-1)}\sum_{i=1}^{N}\sum_{j=i+1}^{N} \left(S_{ij}^{j-i}+S_{ji}^{i-j}\right)\right] \Phi\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsubsection{HO-GCVD for Coordinate-Based Modal Identification}
+
+Now we focus on spatial variations and consider
+\begin{equation}
+	\nabla^k X^\mathrm{H} = \nabla^k \Phi \Xi ^\mathrm{H}  = \Phi \Omega^k \Xi ^\mathrm{H}\,, 
+\end{equation}
+where $\Omega \sim \Lambda$ is a diagonal matrix and the similarity to $\Lambda$ depends on the problem at hand.
+Now, we can define the corresponding spatial cross-covariance matrices
+\begin{equation}
+	B_{kl} = \left({\nabla}^k X^\mathrm{H}\right)^\mathrm{H} {\nabla}^l X^\mathrm{H} = \Xi \overline \Omega^k \Phi^\mathrm{H}  \Phi \Omega^l \Xi^\mathrm{H}\,.
+\end{equation}
+Now, considering
+\begin{align}
+	S_{ij} &\triangleq \frac{1}{N}\sum_{k=1}^N B_{ik}B_{jk}^{-1}\\ 
+	&= \Xi \left(\frac{1}{N}\sum_{k=1}^N \overline \Omega^i \Phi^\mathrm{H} \Phi \Omega^k \Xi^\mathrm{H} \left( \Phi^\mathrm{H}\Phi \Omega^k \Xi^\mathrm{H}\right)^{-1}\overline \Omega^{-j}\right)\Xi^{-1}\\
+	&= \Xi \left(\frac{1}{N}\sum_{k=1}^N  \overline \Omega^{i-j} \right) \Xi^{-1} = \Xi \overline \Omega^{i-j} \Xi^{-1}\,.
+\end{align}
+Now, we can define a final cumulative spatial cross-covariance matrix as
+\begin{equation}
+\begin{aligned}
+	S &= \frac{1}{N(N-1)}\sum_{i=1}^N\sum_{j=i+1}^N \left(S_{ij} + S_{ji}\right)\\
+	&= \frac{1}{N^2(N-1)}\sum_{i=1}^N\sum_{j=i+1}^N \sum_{k=1}^N \left(B_{ik} B_{jk}^{-1} + B_{jk} B_{ik}^{-1}\right)\,,
+\end{aligned}
+\end{equation}
+to derive the following expression
+\begin{equation}
+	S\Xi = \Xi \check  \Omega \,,
+\end{equation}
+where
+\begin{equation}
+		\check  \Omega = \frac{1}{N(N-1)}\sum_{i=1}^N\sum_{j=i+1}^N \left( \overline\Omega^{i-j} + \overline\Omega^{j-i} \right)
+\end{equation}
+is a diagonal matrix.
+
+By solving the eigenvalue problem for the cumulative spatial cross-covariance matrix $S$, we get the eigenvectors in $\Xi$ or the modal coordinates of the problem.
+Then, we can get the corresponding mode shapes and the characteristic values:
+\begin{equation}
+	\Phi = X^\mathrm{H} \Xi^\mathrm{-T} \quad \mathrm{and} \quad \overline\Omega = \Xi^{-1}\left[\frac{1}{N(N-1)}\sum_{i=1}^N\sum_{j=i+1}^N \left(S_{ij}^{j-i}+S_{ji}^{i-j}\right)\right] \Xi\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsubsection{Example 1: HO-GCVD for State-Variable Decomposition}
+
+We can look at S-VD as a special case of Characteristic Value HO-GSVD, where S-VD can be derived from \eqstwo{modal}{dmodal}:
+\begin{equation}
+    X = \Xi \Phi^\mathrm{H} \quad \mathrm{and} \quad \dot X = \dot \Xi \Phi^\mathrm{H} = \Xi \Lambda \Phi^\mathrm{H}\,.
+\end{equation}
+Now defining the following scaled cross-covariance matrices
+\begin{equation}
+    K_{11} = X^\mathrm{H} X\,, \quad  K_{12} = X^\mathrm{H} \dot X\,,\quad    K_{21} = \dot X^\mathrm{H} X\,, \quad \mathrm{and} \quad K_{22} = \dot X^\mathrm{H} \dot X\,,
+\end{equation}
+we can look at the following matrix and its eigendecomposition
+\begin{equation}\label{s-vdS}
+    S = K_{21} K_{11}^{-1}
+          = \Phi \Lambda \Xi^\mathrm{H} \Xi \Phi^\mathrm{H}\left(\Xi^\mathrm{H} \Xi \Phi^\mathrm{H}\right)^{-1} \Phi^{-1} = \Phi \Lambda \Phi^{-1}\,.
+\end{equation}     
+Therefore, vibration modes and the corresponding characteristic values can be obtained by the eigendecomposition of the matrix $S$ in \eq{s-vdS} which corresponds to the generalized eigenvalue problem of \eq{svdev}.
+We can get even more robust estimation of modes if we consider eigendecomposition of the following cumulative cross-covariance matrix
+\begin{equation}
+    S =\frac{1}{2} \sum_{k=1}^{2}  \left(K_{1k} K_{2k}^{-1} + K_{2k} K_{1k}^{-1} \right)= \Phi \check \Lambda \Phi^{-1}\,,
+\end{equation}     
+where 
+\begin{equation}
+    \check \Lambda = \Lambda+\Lambda^{-1}\,.
+\end{equation}
+
+% ----------------------------------------------------------------
+\subsubsection{Example 2: HO-GCVD for Dynamic Mode Decomposition}
+
+A more general DMD can be formulated for $k$ sets of $n$-dimensional vectors $\{x_i,x_{i+1},\ldots,x_{i+m-1}\}_{i=1}^k$ that can be assembled into a set of matrices $\left\{
+X_i=[x_i, x_{i+1}, \ldots,x_{i+m-1}]\in \mathbb{C}^{n\times m}\right\}_{i=1}^k$.
+DMD assumes that these individual matrices can be related through a linear transform (or the best least squares approximation of the underlying nonlinear flow)
+\begin{equation}\label{DMDeq}
+X_{i+1} = A X_i\,.
+\end{equation}
+If the eigendecomposition of the transformation matrix $A$ is
+\begin{equation}\label{DMDeq1}
+A = \Phi \Omega \Phi^{-1} \,,
+\end{equation}
+where DMD modes are the eigenvectors in $\Phi$ and the corresponding frequencies and growth rates can be determined using the eigenvalues in $\Omega=\mathrm{diag}(\omega_{i})$, then
+\begin{equation}
+    \Phi^{-1}X_{i+1} = \Omega \Phi^{-1}X_i\,.
+\end{equation}
+The above will be satisfied if data matrices have the following structures
+\begin{equation}\label{DMDs}
+    X_i = \Phi \Omega^{i-1} \Xi^\mathrm{H}\,,
+\end{equation}
+where $\Phi\in \mathbb{C}^{n\times r}$ are DMD modes, $r = \min \left( \mathrm{rank}(X_i), m, n\right)$, $\Xi \in \mathbb{C}^{m\times r}$ are the modal coordinates, and $\Omega = \mathrm{diag}\left( e^{\lambda_k\Delta t}\right)\in \mathbb{C}^{r\times r}$ is a diagonal matrix containing information about the corresponding frequencies and growth rates in $\lambda_k$.
+
+Previously, we have discussed how we can accomplish DMD using the TSVD of the matrix $X_1$ in conjunction with matrix $X_2$.
+Here, we instead consider solving DMD using HO-GCVD.
+As a first step, we have to find a subspace where we can work with full column rank matrices.
+Perform HO-GCVD in that subspace and then unfold the results into a full space.\\
+
+% ----------------------------------------------------------------
+\noindent\textbf{Finding Reduced-Order Full Rank Data Matrices}\\
+We start by constructing a combined data matrix containing all the unique row vectors in the data set and determining its $r$-dimensional TSVD to reduce all matrices $X_i$ to full rank
+\begin{equation}
+    X = \bigcup \left\{X_1; X_2; \cdots; X_N\right\}
+    \approx  \tilde V \tilde \Sigma  \tilde Q^\mathrm{H}\,,
+\end{equation}
+to identify the $r$-dimensional orthogonal projection matrix $\tilde Q\in \mathbb{C}^{m\times r}$ that optimally captures information in each data matrix, where $r = \min\left(\mathrm{rank}(X),m,n\right)$.
+Now, we can obtain the full column rank matrices
+\begin{equation}
+    \tilde X_i = X_i \tilde Q = \Phi \Omega^{i-1}\Xi^\mathrm{H}\tilde Q\,
+\end{equation}
+for which we are  looking for decompositions in the following form
+\begin{equation}\label{dmdgsvd}
+    \tilde X_i %= \Phi \Omega_{i} \tilde U^\mathrm{H} 
+    = \Phi \Omega^{i-1} \tilde \Xi^\mathrm{H}\,.
+\end{equation}\\
+
+% ----------------------------------------------------------------
+\noindent\textbf{Applying HO-GCVD to the Reduced Data Matrices} \\
+To find decompositions given in \eq{dmdgsvd}, we define the following cross-correlation matrices
+\begin{equation}
+    \tilde K_{ij} = {\tilde X_i^\mathrm{H} \tilde X_j} = {\tilde \Xi \overline \Omega^{i-1} \Phi^\mathrm{H} \Phi \Omega^{j-1}  \tilde \Xi^\mathrm{H}  }\,,
+\end{equation}
+and obtain the cumulative cross-correlation matrix
+\begin{equation}
+\begin{aligned}
+  S &= \frac{1}{k^2(k-1)}
+    \sum_{i=1}^{k-1} 
+    \sum_{j=i+1}^k
+    \sum_{q=1}^k  
+    \tilde K_{iq}\tilde K_{jq}^{-1} +  \tilde K_{jq}\tilde K_{iq}^{-1}\\
+    &= \frac{1}{k^2(k-1)}
+    \sum_{i=1}^{k-1} 
+    \sum_{j=i+1}^k
+    \sum_{q=1}^k  
+    \tilde \Xi \overline \Omega^{i-j} \tilde \Xi^{-1}+  \tilde \Xi  \overline \Omega^{j-i} \tilde \Xi^{-1}\\
+    &=  
+    \tilde \Xi \left[\frac{1}{k(k-1)}
+    \sum_{i=1}^{k-1} 
+    \sum_{j=i+1}^k
+\overline \Omega^{i-j} + \overline \Omega^{j-i} \right]\tilde \Xi^{-1}\\
+&=  \tilde \Xi \check \Omega \tilde \Xi^{-1}\,,
+\end{aligned}
+\end{equation}
+where the eigenvalues of $S$ form a diagonal matrix
+\begin{equation}
+    \check \Omega = \frac{1}{k(k-1)}
+    \sum_{i=1}^{k-1} 
+    \sum_{j=i+1}^k
+ \left(\overline \Omega^{i-j} + \overline \Omega^{j-i}\right)\,.
+\end{equation}
+and $\tilde \Xi$ is the matrix of the corresponding eigenvectors or time coordinates in $r$-dimensional subspace.\\
+
+% ----------------------------------------------------------------
+\noindent\textbf{Reconstructing Full Space DMD}\\
+The full $m$-dimensional DMD time coordinates in \eq{dmdgsvd} are recovered using
+\begin{equation}
+    \Xi = \tilde Q \tilde \Xi
+\end{equation}
+and the corresponding {\em scaled} DMD modes are
+\begin{equation}
+    M_i = \left[m_{i,1}, m_{i,2},\ldots,m_{i,r}\right]=\Phi \Omega^{i-1} = X_i \Xi
+ = X_i \tilde Q \tilde \Xi\,.
+\end{equation}
+Therefore, we can write
+\begin{equation}
+    M_i\Omega^{i-1} = M_j \Omega^{j-1}\,,
+\end{equation}
+which provides
+\begin{equation}
+    \Omega = \left\langle \left(M_j^\dag M_i\right)^{i-j}   \right\rangle = \frac{1}{N} \sum_{k=1}^N   M_{k}^\dag M_{k+1}\approx M_1^\dag M_2\,.
+\end{equation}
+The corresponding {\em normalized} DMD modes can be obtained as
+\begin{equation}
+\Phi = \left\langle M_i \Omega^{1-i} \right\rangle=\frac{1}{N} \sum_{k=1}^N   M_{k}\Omega^{1-k} \approx M_1\,.
+\end{equation}
+%and the corresponding eigenvectors as
+%\begin{equation}
+%    \tilde V = \frac{1}{2}(X_1 U^{-H} + X_2 U^{-H}\Omega^{-1})\,,
+%\end{equation}
+%which can be further made unitary
+%\begin{equation}
+%v_i = \frac{\tilde v_i}{\norm{\tilde v_i}}\,.
+%\end{equation}
+When DMD is formulated as HONHD problem, it opens up possibilities of using other data matrices to improve the estimated modes.
+For example, we can use any spatial transformation that does not alter the temporal coordinates:
+\begin{equation}
+Y_{i,k} = \nabla^k X_i = \nabla^k \Phi \Omega_{i} \Xi^\mathrm{H}\,.
+\end{equation}
+
+
+% ----------------------------------------------------------------
+\subsubsection{HO-GCVD for Coordinate-Based Identification}
+
+Now we focus on spatial variations and consider
+\begin{equation}
+    \nabla^k X^\mathrm{H} = \nabla^k \Phi \Xi ^\mathrm{H}  = \Phi \Omega^k \Xi ^\mathrm{H}\,, 
+\end{equation}
+where $\Omega \sim \Lambda$ is a diagonal matrix and the similarity to $\Lambda$ depends on the problem at hand.
+Now, we can define the corresponding spatial cross-covariance matrices
+\begin{equation}
+    P_{kl} = \left({\nabla}^k X^\mathrm{H}\right)^\mathrm{H} {\nabla}^l X^\mathrm{H} = \Xi \overline \Omega^k \Phi^\mathrm{H}  \Phi \Omega^l \Xi^\mathrm{H}\,.
+\end{equation}
+Now, considering
+\begin{align}
+    S_{ij} &\triangleq \frac{1}{N}\sum_{k=1}^N P_{ik}P_{jk}^{-1}\\ 
+    &= \Xi \left(\frac{1}{N}\sum_{k=1}^N \overline \Omega^i \Phi^\mathrm{H} \Phi \Omega^k \Xi^\mathrm{H} \left( \Phi^\mathrm{H}\Phi \Omega^k \Xi^\mathrm{H}\right)^{-1}\overline \Omega^{-j}\right)\Xi^{-1}\\
+    &= \Xi \left(\frac{1}{N}\sum_{k=1}^N  \overline \Omega^{i-j} \right) \Xi^{-1} = \Xi \overline \Omega^{i-j} \Xi^{-1}\,.
+\end{align}
+Now, we can define a final cumulative spatial cross-covariance matrix as
+\begin{equation}
+\begin{aligned}
+    S &= \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(S_{ij} + S_{ji}\right)\\
+    &= \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \sum_{k=1}^N \left(P_{ik} P_{jk}^{-1} + P_{jk} P_{ik}^{-1}\right)\,,
+\end{aligned}
+\end{equation}
+to derive the following expression for non-Hermitian eigenvalue problem
+\begin{equation}
+    S\Xi = \Xi \check  \Omega \,,
+\end{equation}
+where
+\begin{equation}
+        \check  \Omega = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left( \overline\Omega^{i-j} + \overline\Omega^{j-i} \right)
+\end{equation}
+is a diagonal matrix.
+
+By solving the eigenvalue problem for the cumulative spatial cross-covariance matrix $S$, we get the eigenvectors in $\Xi$ or the modal coordinates of the problem.
+Then, we can get the corresponding mode shapes and the characteristic values:
+\begin{equation}
+    \Phi = X^\mathrm{H} \Xi^\mathrm{-T} \quad \mathrm{and} \quad \overline\Omega = \Xi^{-1}\left[\frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(S_{ij}^{j-i}+S_{ji}^{i-j}\right)\right] \Xi\,.
+\end{equation}
+
+
+\subsubsection{Some Variations on HO-GCVD}
+
+The underlying assumption for the HO-GSVD is that the data matrices possess common basis in either temporal or spatial domains.
+If we are working with a data matrix, $X\in\mathbb{C}^{m\times n}$ and we are looking for a spatial basis $V$ in the decomposition
+\begin{equation}
+    X = U\Sigma V^\mathrm{H}\,,
+\end{equation}
+Then we can consider applying various temporal operators such as time derivatives
+\begin{equation}
+    D^k X = \left(D^k U\right) \Sigma V^\mathrm{H}\,,
+\end{equation} 
+Hilbert Transform\begin{equation}
+    {\cal H} X = \left({\cal H} U\right) \Sigma V^\mathrm{H}\,,
+\end{equation}
+integrals, etc. and/or combination of linear temporal coordinate transformations of $F$ such as Fast Fourier Transform 
+\begin{equation}
+    {\cal F} X = \left({\cal F} U\right) \Sigma V^\mathrm{H}\,,
+\end{equation}
+Laplace Transform
+\begin{equation}
+    \mathcal{L} X = \left(\mathcal{L} U\right) \Sigma V^\mathrm{H}\,,
+\end{equation}
+etc. and still retain the same spatial modes. 
+Therefore, we can obtain various data matrices either through temporal operators or temporal coordinate transformations that have the same spatial modal structure.
+As a result, we can augment the HO-GSVD by the combination of new autocovariance and cross-covariance functions.
+For example, in DMD, we can consider more than one delay in the data, as shown in the previous section.
+% ----------------------------------------------------------------
+\section*{Acknowledgements}
+This work was supported by continual reluctance. The authors would also like to acknowledge the support from National Science Foundation.
+
+% ----------------------------------------------------------------
+% The bibliography is stored in an external database file
+% in the BibTeX format (file_name.bib).  The bibliography is
+% created by the following command and it will appear in this
+% position in the document. You may, of course, create your
+% own bibliography by using thebibliography environment as in
+%
+% \begin{thebibliography}{12}
+% ...
+% \bibitem{itemreference} D. E. Knudsen.
+% {\em 1966 World Bnus Almanac.}
+% {Permafrost Press, Novosibirsk.}
+% ...
+% \end{thebibliography}
+
+% Here's where you specify the bibliography database file.
+% The full file name of the bibliography database for this
+% article is asme2e.bib. The name for your database is up
+% to you.
+\bibliography{asme2e}
+
+\end{document}
+% ----------------------------------------------------------------
+
+% ----------------------------------------------------------------
+\subsection{Mode-Based HO-GNHD}
+
+Mode-Based HO-GCVD considers a set of matrices $\left\{X_i\in\mathbb{C}^{m_i\times n}\right\}_{i=1}^N$ (all $m_i > n$) and decomposes them into
+\begin{equation}\label{HONHD1}
+	X_i = U_i \Sigma_i V^\mathrm{H}\,,
+\end{equation}
+where $V\in\mathbb{C}^{n\times n}$ are right basis vectors, $\Sigma_i\in\mathbb{C}^{n\times n}$ are diagonal matrices reflecting changes in the magnitude and the phase of the right basis vectors, and $U_i\in\mathbb{C}^{m_i \times n}$ left basis vectors for each data matrix.
+For modal identification, as discussed in the above examples, we expect each $U_i$ to be a truncated version of the shared modal coordinates $U$.
+The main difference here compared to HO-GSVD is that we allow $\Sigma_i\in\mathbb{C}^{n\times n}$ to be complex, so it would not only contain the magnitude information but also phase information in each mode.
+Please note that since all the matrices in the decomposition are complex, we can alter the phase in $\Sigma_i$ by adjusting the phases of $U_i$ without losing the form.
+From this perspective the phase information in $U_i\Sigma_i$ and $U_j          \Sigma_j$ reflects only the relative phase differences between the corresponding modes in $X_i$ and $X_j$.
+With this in mind, we can require $\Sigma_1 \in\mathbb{R}^{n\times n}$ without the loss of generality and then for $i>1$ phase information in $\Sigma_i$ will be with respect to data in the base matrix $X_1$, for which $\Sigma_1$ contains only the magnitude information (i.e., has zero relative phase).
+
+For HO-GCVD we need to consider asymmetric (non-Hermitian) cross-covariance matrices for $i\ne k$ 
+\begin{equation}
+	K_{ik} = X_i^\mathrm{H} X_k\,.
+\end{equation}
+However, if $m_k \ne m_i$, we cannot do this calculation.
+Therefore, we let $m_{ik} = \min\left(m_i,m_k\right)$ and truncate each data matrix to the same number of $m_{ik}$ rows  for each pair of $\hat X_i \in \mathbb{C}^{m_{ik}\times n}$ and $\hat X_k \in \mathbb{C}^{m_{ik}\times n}$ to get
+\begin{equation}
+	K_{ik} = \hat X_i^\mathrm{H} \hat X_k = V \overline \Sigma_i \hat U_i^\mathrm{H}  \hat U_k \Sigma_k V^\mathrm{H}\,.
+\end{equation}
+and assuming each of the cross-covariances are full rank, we derive the following expression
+\begin{equation}
+\begin{aligned}
+	K_{ik} K_{jk}^{-1} &=  V \overline \Sigma_i \hat U_i^\mathrm{H}  \hat U_k \Sigma_k V^\mathrm{H}
+	\left(V \overline \Sigma_j \hat U_j^\mathrm{H}  \hat U_k \Sigma_k V^\mathrm{H}\right)^{-1}\\
+	&=  V \overline \Sigma_i \left(\hat U_i^\mathrm{H}  \hat U_k \right) \Sigma_k V^\mathrm{H}V^\mathrm{-H} \Sigma_k^{-1}
+	 \left(U_j^\mathrm{H}  U_k \right)^{-1} \overline \Sigma_j^{-1} V^{-1}\\
+	&=  V \overline \Sigma_i \left(\hat U_i^\mathrm{H}  \hat U_k \right) \left(\hat U_j^\mathrm{H}  \hat U_k \right)^{-1} \overline \Sigma_j^{-1} V^{-1} \,.
+\end{aligned}
+\end{equation}
+Since, we expect the data records to have the same left and right basis vectors, we can set $\hat U_k = \hat U$ for all $k$, and thus we get the following diagonalization
+\begin{equation}\label{kikkjk}
+	K_{ik} K_{jk}^{-1} = V \Lambda_{ij} V^{-1}
+\end{equation}
+where
+\begin{equation}\label{Lij}
+	\Lambda_{ij} = \overline \Sigma_i \overline \Sigma_j^{-1}\,.
+\end{equation}
+
+%To use the same principles as in the derivation for HO-GSVD, we need the bracketed terms in the above equation to give a diagonal matrix, i.e.,
+%\begin{equation}
+%	\left(U_i^\mathrm{H}  U_k \right)
+%	 \left(U_j^\mathrm{H}  U_k \right)^{-1}=\Gamma_{ij}\quad \Rightarrow \quad U_i^\mathrm{H}  U_k =\Gamma_{ij}U_j^\mathrm{H}  U_k\quad \Rightarrow\quad U_i^\mathrm{H} =\Gamma_{ij}U_j^\mathrm{H}\,.
+%\end{equation}
+%Therefore, we get
+%\begin{equation}
+%U_i =U_j\overline \Gamma_{ij}\,,\quad \mathrm{where} \quad  \Gamma_{ij}= \mathrm{diag}\left(\gamma_{ij}\right), \quad \mathrm{with} \quad \abs{\gamma_{ij}}=1.
+%\end{equation}
+%Now, if we let $U_1 = U$, then
+%\begin{equation}
+%	U_i = U \overline \Gamma_{i1} \,,
+%\end{equation}
+%or if we set $ \overline \Gamma_i = \overline\Gamma_{i1}$ with $\Gamma_1 = I$, we get
+%\begin{equation}
+%	U_i = U  \overline \Gamma_i\,.
+%\end{equation}
+%Therefore, we can return to \eq{kijkjk}, to get
+%\begin{equation}
+%		K_{ik} K_{jk}^{-1} =  V \overline \Sigma_i \Gamma_i \Gamma_j^{-1}  \overline \Sigma_j^{-1} V ^{-1}=  V \Lambda_{ij} V ^{-1}\,,
+%\end{equation}
+%where
+%\begin{equation}\label{kikkjk2}
+%	\Lambda_{ij} = \overline \Sigma_i \Gamma_i \Gamma_j^{-1}  \overline \Sigma_j^{-1}\,.
+%\end{equation}
+
+%\begin{equation}
+%	 \overline \Sigma_i \left(U_i^\mathrm{H}  U_k \right)
+%	 \left(U_j^\mathrm{H}  U_k\right)^{-1} \overline \Sigma_j^{-1}=\mathrm{diag}(\lambda_{ijk})=\Lambda_{ijk} \,.
+%\end{equation}
+%For this to happen either $U_i$ is orthogonal to $U_j$ for all $i\ne j$, 
+%	\begin{equation}
+%		U_i^\mathrm{H} U_j = \Gamma_{ij} = \mathrm{diag}(\gamma_{ij})\quad \Rightarrow \quad		
+%		\Lambda_{ijk} = \overline \Sigma_i \Gamma_{ik}\Gamma_{jk}^{-1} \overline \Sigma_j^{-1}\,,
+%	\end{equation}
+%or $U_i = U\Gamma_{i}$ for all $i$, where $\Gamma_{i}=\mathrm{diag}(\gamma_{i,l})$ is a diagonal matrix with $\abs{\gamma_{i,l}}=1$.
+%	Then,
+%	\begin{equation}
+%    	\Lambda_{ij} = \overline \Sigma_i \overline \Gamma_i \overline \Gamma_{j}^{-1} \overline \Sigma_j^{-1} \,,
+%	\end{equation}
+%Finally, each data matrix will be decomposed into 	
+%\begin{equation}\label{HONHD2}
+%	X_i = U\Sigma_iV^\mathrm{H},
+%\end{equation}
+%which perfectly agrees with the data matrix forms in damped vibrations response or DMD.
+%if we let $U_i = U \Gamma_{i1}$, with $\Gamma_{11}=I$, and $\Sigma_i\rightarrow \Gamma_{i1}^{-1}\Sigma_i$.
+%Please also note that we do not have to require $U$ be orthogonal in this case.
+%
+%Now, we can also separate $\Sigma_i$ into its magnitude and phase
+%\begin{equation}
+%	\Sigma_i = \Lambda_i\Theta_i\,,
+%\end{equation}
+%where $\Theta_1 = I$, for $i>1$ $\Theta_i = \mathrm{diag}(\theta_{i,k})\in\mathbb{C}^{n\times n}$ ($\abs{\theta_{i,k}} = 1$), and $\Lambda_i = \mathrm{diag}(\lambda_{i,k})\in\mathbb{R}^{n\times n}$.
+%Therefore, using the above,
+%\begin{equation}
+%	\Lambda_{ij} = \Lambda_i \overline \Theta_i \left(\Lambda_j \overline \Theta_j\right)^{-1} = \mathrm{diag}\left(\lambda_{ij,k}\right), \quad \mathrm{where} \quad \lambda_{ij,k} \triangleq \frac{\lambda_{i,k} \overline {\theta_{i,k}}}{\lambda_{j,k} \overline {\theta_{j,k}}}\,.
+%\end{equation}
+%Thus, from \eq{kikkjk} we have the following eigendecomposition
+%\begin{equation}\label{kikkjk2}
+%	K_{ik} K_{jk}^{-1} = V\Lambda_{ij}  V^{-1}\,,
+%\end{equation}
+This \eq{kikkjk} can also be written as the equivalent non-Hermitian eigenvalue problem
+\begin{equation}
+	K_{ik} K_{jk}^{-1} v = \lambda_{ij} v\,,
+\end{equation}
+or the corresponding non-Hermitian generalized eigenvalue problem in terms of the adjoint eigenvectors
+\begin{equation}
+	K_{ki}w = \lambda_{ij} K_{kj} w \,,
+\end{equation}
+which gives the corresponding adjoint eigenvalue problem:
+\begin{equation}
+	K_{kj}^{-1} K_{ki}w = \lambda_{ij} w \,.
+\end{equation}
+
+We can generalize \eq{kikkjk} even further if we sum over all $i$, $j\ne i$, and $k$ to get the following eigenvalue problem
+\begin{equation}
+	 S v = \lambda v\,,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+	S & = \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N\sum_{k=1}^N \left(K_{jk}K_{ik}^{-1}+K_{ik}K_{jk}^{-1}\right)\,,\\
+	\lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda_{ij}+\lambda_{ji}\right)\,.
+\end{aligned}	
+\end{equation}
+
+To find the other components of the decomposition, we make the columns $v_i$ in $V$ unit norm.
+Then, we define
+\begin{equation}\label{Meq0}
+	M_i\triangleq\left[m_{i,1}, \cdots, m_{i,n} \right] = X_i V^\mathrm{-H}\,,
+\end{equation}
+and let
+\begin{equation}
+	\Sigma_{1} \equiv \mathrm{diag} \left(\norm{m_{1,k}}\right) \qquad \Rightarrow \qquad U_1 = M_1 \Sigma_{1}^{-1}\,.
+\end{equation}
+By letting $\Sigma_1 \in \mathbb{R}^{n\times n}$, we are just fixing the phase of the modal coordinates in $U_1$.
+For $i>1$, we can also write 
+% find the corresponding magnitude and phase information using \eq{Meq0} with \eq{HONHD2} to get
+\begin{equation}
+	\hat M_i \Sigma_i^{-1} = \hat M_1 \Sigma_1^{-1}\,,
+\end{equation}
+where hat again indicate the truncation of the number of rows to $m_{1i}$.
+Now, by multiplying both sides of the above from the left by $\hat M_1^\mathrm{H}$ we obtain
+\begin{equation}
+	\hat M_1^\mathrm{H}\hat M_1 \Sigma_1^{-1} = \hat M_1^\mathrm{H}\hat M_i\Sigma_i^{-1}\,,
+\end{equation}
+which we can use to get
+\begin{equation}
+	\Sigma_i = \mathrm{diag}(\sigma_{i,k})
+	%\triangleq \left[ \varphi_{i,1}, \varphi_{i,2}, \ldots , \varphi_{i,n}\right] 
+	= \Sigma_1 \hat M_1^\dag \hat M_i\quad \Rightarrow \quad U_i = M_i\Sigma_i^{-1} \,,
+\end{equation}
+where $\hat M_1^\dag = (\hat M_1^\mathrm{H}\hat M_1)^{-1}\hat M_1^\mathrm{H}$ is the pseudo-inverse of $\hat M_1$.
+When viewed from this perspective, we see that $\Sigma_i$ contain the information about the phase and magnitude change in the modal coordinates of $U_i$ with respect to the basis coordinates $U_1$.
+%Then
+%\begin{equation}
+%	\Lambda_i = 
+%	%\mathrm{diag} \left(\norm{\varphi_{i,k}}\right)
+%	\abs{\Sigma_i}= \mathrm{diag}(\abs{\sigma_{i,k}}) \quad \mathrm{and} \quad \Omega_i = \Sigma_i\Lambda_i^{-1}\,.
+%\end{equation}
+
+Alternatively, we can focus on the conjugate modes if we consider
+\begin{equation}
+	 C w = \lambda w\,,
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+	C & = \frac{1}{N^2(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N\sum_{k=1}^N \left(K_{kj}^{-1}K_{ki}+K_{ki}^{-1}K_{kj}\right)\,,\\
+	\lambda & = \frac{1}{N(N-1)}\sum_{i=1}^{N-1} \sum_{j=i+1}^N \left(\lambda_{ij}+\lambda_{ji}\right)\,.
+\end{aligned}	
+\end{equation}
+
